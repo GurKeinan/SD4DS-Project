@@ -1,0 +1,21 @@
+version: '3'
+
+services:
+  mongo:
+    image: mongo
+    container_name: image-classification-db
+    volumes:
+      - mongo-data:/data/db
+    ports:
+      - "27017:27017"
+
+  web:
+    build: .
+    container_name: image-classification-api
+    ports:
+      - "5000:5000"
+    depends_on:
+      - mongo
+
+volumes:
+  mongo-data:
