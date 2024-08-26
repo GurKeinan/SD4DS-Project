@@ -1,0 +1,35 @@
+version: '3'
+
+services:
+  web:
+    build: .
+    container_name: face-merge-web
+    ports:
+      - "8000:5000"
+    networks:
+      - face-merge-net
+    depends_on:
+      - mongodb
+      - api
+
+  api:
+    build: .
+    container_name: face-merge-api
+    networks:
+      - face-merge-net
+    depends_on:
+      - mongodb
+
+  mongodb:
+    image: mongo
+    container_name: face-merge-mongodb
+    volumes:
+      - mongo-data:/data/db
+    networks:
+      - face-merge-net
+
+volumes:
+  mongo-data:
+
+networks:
+  face-merge-net:
