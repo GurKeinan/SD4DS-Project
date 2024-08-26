@@ -4,6 +4,25 @@ from werkzeug.utils import secure_filename
 from pymongo import MongoClient
 import uuid
 import threading
+import torch
+from torchvision import models, transforms
+from PIL import Image
+
+# Load ResNet model
+model = models.resnet50(pretrained=True)
+model.eval()
+
+# Load class labels from classes.txt
+with open('imagenet-classes.txt') as f:
+    class_names = [line.strip() for line in f.readlines()]
+
+# Define the image transformation pipeline
+preprocess = transforms.Compose([
+    transforms.Resize(256),
+    transforms.CenterCrop(224),
+    transforms.ToTensor(),
+    transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+])
 
 app = Flask(__name__)
 
@@ -18,9 +37,29 @@ def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
+# def classify_image(filepath):
+#     # Dummy implementation, replace with actual model inference
+#     return [{'name': 'tomato', 'score': 0.9}, {'name': 'carrot', 'score': 0.02}]
+
 def classify_image(filepath):
-    # Dummy implementation, replace with actual model inference
-    return [{'name': 'tomato', 'score': 0.9}, {'name': 'carrot', 'score': 0.02}]
+    # Open the image file
+    img = Image.open(filepath)
+    
+    # Preprocess the image
+    img_t = preprocess(img)
+    batch_t = torch.unsqueeze(img_t, 0)
+
+    # Perform inference
+    with torch.no_grad():
+        out = model(batch_t)
+    
+    # Get the top 5 predictions
+    _, indices = torch.topk(out, 5)
+    percentages = torch.nn.functional.softmax(out, dim=1)[0] * 100
+    predictions = [(class_names[idx], percentages[idx].item()) for idx in indices[0]]
+
+    # Return the predictions in the expected format
+    return [{'name': name, 'score': score / 100} for name, score in predictions]
 
 @app.route('/upload_image', methods=['POST'])
 def upload_image():
