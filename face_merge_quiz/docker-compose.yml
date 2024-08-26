@@ -10,15 +10,6 @@ services:
       - face-merge-net
     depends_on:
       - mongodb
-      - api
-
-  api:
-    build: .
-    container_name: face-merge-api
-    networks:
-      - face-merge-net
-    depends_on:
-      - mongodb
 
   mongodb:
     image: mongo
