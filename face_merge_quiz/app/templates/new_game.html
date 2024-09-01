@@ -14,7 +14,7 @@
             href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css"
             crossorigin="anonymous"
         />
-        <title>Home</title>
+        <title>New Game Created</title>
     </head>
 
     <body>
@@ -42,25 +42,23 @@
         </nav>
 
         <div class="container mt-5">
-            <div class="jumbotron">
-                <h1 class="display-4">Welcome to FaceMergeQuiz!</h1>
-                <p class="lead">
-                    Play a fun game where you merge faces and guess who the other
-                    player chose!
-                </p>
-                <hr class="my-4" />
-                {% if user.is_authenticated %}
-                <p>
-                    Ready to play? <a href="/join-game" class="btn btn-primary btn-lg" role="button">Join a Game</a>
-                </p>
-                {% else %}
-                <p>
-                    To get started, please
-                    <a href="/login">log in</a> or
-                    <a href="/sign-up">sign up</a> for an account.
-                </p>
-                {% endif %}
+            <h2>New Game Created!</h2>
+            <p class="lead">
+                Share this game code with your friend to join the game:
+            </p>
+            <div class="alert alert-primary" role="alert">
+                <h3>{{ game_code }}</h3>
             </div>
+            <form method="POST" action="/waiting-room">
+                <input type="hidden" name="game_code" value="{{ game_code }}">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" value="private" id="privateGame" name="private">
+                    <label class="form-check-label" for="privateGame">
+                        Only users with the code can join
+                    </label>
+                </div>
+                <button type="submit" class="btn btn-primary mt-3">Go to Waiting Room</button>
+            </form>
         </div>
 
         <script

@@ -1,3 +1,6 @@
+import random
+import string
+
 from flask import render_template, redirect, url_for, flash, request
 from flask_login import login_user, logout_user, current_user, login_required
 from app import app, mongo, bcrypt, login_manager
@@ -64,3 +67,43 @@ def logout():
     logout_user()
     flash('You have been logged out.', 'success')
     return redirect(url_for('home'))
+
+
+@app.route('/join-game')
+@login_required
+def join_game():
+    return render_template('join_game.html')
+
+
+def generate_game_code(length=6):
+    """Generates a random game code."""
+    letters_and_digits = string.ascii_uppercase + string.digits
+    return ''.join(random.choice(letters_and_digits) for i in range(length))
+
+
+@app.route('/start-game')
+@login_required
+def start_game():
+    # Generate a unique game code
+    game_code = generate_game_code()
+
+    flash('Game created successfully!', 'success')
+    return render_template('new_game.html', game_code=game_code)
+
+
+@app.route('/waiting-room', methods=['POST'])
+@login_required
+def waiting_room():
+    game_code = request.form['game_code']
+    private = 'private' in request.form
+
+    # Store the game in the database with privacy setting
+    game_id = mongo.db.games.insert_one({
+        "game_code": game_code,
+        "player1_id": current_user.id,
+        "player2_id": None,
+        "status": "waiting",
+        "private": private
+    }).inserted_id
+
+    return render_template('waiting_room.html', game_code=game_code)

@@ -14,7 +14,7 @@
             href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css"
             crossorigin="anonymous"
         />
-        <title>Home</title>
+        <title>Waiting Room</title>
     </head>
 
     <body>
@@ -42,25 +42,16 @@
         </nav>
 
         <div class="container mt-5">
-            <div class="jumbotron">
-                <h1 class="display-4">Welcome to FaceMergeQuiz!</h1>
-                <p class="lead">
-                    Play a fun game where you merge faces and guess who the other
-                    player chose!
-                </p>
-                <hr class="my-4" />
-                {% if user.is_authenticated %}
-                <p>
-                    Ready to play? <a href="/join-game" class="btn btn-primary btn-lg" role="button">Join a Game</a>
-                </p>
-                {% else %}
-                <p>
-                    To get started, please
-                    <a href="/login">log in</a> or
-                    <a href="/sign-up">sign up</a> for an account.
-                </p>
-                {% endif %}
+            <h2>Waiting Room</h2>
+            <p class="lead">
+                Waiting for another player to join the game. Please share your game code:
+            </p>
+            <div class="alert alert-primary" role="alert">
+                <h3>{{ game_code }}</h3>
             </div>
+            <p>
+                When the other player joins, the game will start automatically.
+            </p>
         </div>
 
         <script
