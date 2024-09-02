@@ -4,25 +4,29 @@ from flask import render_template, redirect, url_for, flash, request, jsonify, s
 from flask_login import login_user, logout_user, current_user, login_required
 from bson.objectid import ObjectId
 from datetime import datetime
-from app import app, mongo, bcrypt, login_manager
+from app import app, mongo, bcrypt, login_manager, waiting_users_collection
 from app.models import User
+
 
 @login_manager.user_loader
 def load_user(user_id):
     user_data = mongo.db.users.find_one({"_id": ObjectId(user_id)})
     if user_data:
-        return User(user_data['username'], user_data['password'], user_data['wins'], user_data['losses'], str(user_data['_id']))
+        return User(user_data['username'], user_data['password'], user_data['wins'], user_data['losses'],
+                    str(user_data['_id']))
     return None
 
-# Function to generate a random game code
+
 def generate_game_code(length=6):
     """Generates a random game code."""
     letters_and_digits = string.ascii_uppercase + string.digits
     return ''.join(random.choice(letters_and_digits) for i in range(length))
 
+
 @app.route('/')
 def home():
     return render_template('index.html')
+
 
 @app.route('/sign-up', methods=['GET', 'POST'])
 def sign_up():
@@ -50,6 +54,7 @@ def sign_up():
 
     return render_template('sign_up.html')
 
+
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
@@ -58,7 +63,8 @@ def login():
 
         user_data = mongo.db.users.find_one({"username": username})
         if user_data and bcrypt.check_password_hash(user_data['password'], password):
-            user = User(user_data['username'], user_data['password'], user_data['wins'], user_data['losses'], str(user_data['_id']))
+            user = User(user_data['username'], user_data['password'], user_data['wins'], user_data['losses'],
+                        str(user_data['_id']))
             login_user(user)
             flash('Logged in successfully!', 'success')
             return redirect(url_for('home'))
@@ -67,6 +73,7 @@ def login():
 
     return render_template('login.html')
 
+
 @app.route('/logout')
 @login_required
 def logout():
@@ -74,10 +81,12 @@ def logout():
     flash('You have been logged out.', 'success')
     return redirect(url_for('home'))
 
+
 @app.route('/join-game')
 @login_required
 def join_game():
     return render_template('join_game.html')
+
 
 @app.route('/start-game')
 @login_required
@@ -91,76 +100,66 @@ def start_game():
         "player1_id": current_user.id,
         "player2_id": None,
         "status": "waiting",
-        "private": False,
+        "private": True,  # Since it's a code-based game, it's private by default
         "created_at": datetime.utcnow(),
         "players": [current_user.id]
     }).inserted_id
 
+    # Store the game ID in the session and redirect to the waiting room for created games
     session['game_id'] = str(game_id)
-    flash('Game created successfully!', 'success')
-    return render_template('new_game_code.html', game_code=game_code)
+    return redirect(url_for('waiting_room_created_game', game_code=game_code))
 
-@app.route('/waiting-room', methods=['POST'])
+
+@app.route('/waiting-room-created-game')
 @login_required
-def waiting_room():
-    game_code = request.form['game_code']
+def waiting_room_created_game():
+    game_code = request.args.get('game_code')
+    return render_template('waiting_room_created_game.html', game_code=game_code)
 
-    # Retrieve the game from the database using the game code and current user's ID
-    game = mongo.db.games.find_one({"game_code": game_code, "player1_id": current_user.id})
-
-    if game:
-        # Render the waiting room and pass the game code to the template
-        return render_template('waiting_room.html', game_code=game_code)
-    else:
-        # Handle the error if the game is not found or if the user doesn't match
-        flash('Error finding the game. Please try again.', 'error')
-        return redirect(url_for('home'))
-
-@app.route('/join-game-code', methods=['POST'])
-@login_required
-def join_game_code():
-    game_code = request.form['gameCode']
-
-    # Asynchronously check if the game code exists in the database
-    game = mongo.db.games.find_one({"game_code": game_code})
-
-    if game:
-        if game['player2_id'] is None:
-            # Update the game with the second player's ID
-            mongo.db.games.update_one(
-                {"_id": game['_id']},
-                {"$set": {"player2_id": current_user.id, "status": "ready"},
-                 "$push": {"players": current_user.id}}
-            )
-            session['game_id'] = str(game['_id'])
-            # Notify the first player and redirect both to the load_image page
-            return redirect(url_for('game_ready'))
-        else:
-            flash('This game is already in progress.', 'error')
-            return redirect(url_for('join_game'))
-    else:
-        flash('Invalid game code. Please try again.', 'error')
-        return redirect(url_for('join_game'))
 
 @app.route('/join-random-game')
 @login_required
 def join_random_game():
-    # Try to find a public game where player2_id is None (waiting for a second player)
-    game = mongo.db.games.find_one({"private": False, "player2_id": None})
+    # Add the current user to the "waiting for a partner" database
+    waiting_users_collection.insert_one({"user_id": current_user.id, "timestamp": datetime.utcnow()})
 
-    if game:
-        # Found an available game, add the current user as the second player
-        mongo.db.games.update_one(
-            {"_id": game["_id"]},
-            {"$set": {"player2_id": current_user.id, "status": "ready"},
-             "$push": {"players": current_user.id}}
+    # Check how many users are currently waiting
+    waiting_users = list(waiting_users_collection.find().sort("timestamp"))
+
+    if len(waiting_users) >= 2:
+        # If there are at least 2 users, pair them up
+        player1 = waiting_users[0]
+        player2 = waiting_users[1]
+
+        # Create a new game for them
+        game_code = generate_game_code()
+        game_id = mongo.db.games.insert_one({
+            "game_code": game_code,
+            "player1_id": player1["user_id"],
+            "player2_id": player2["user_id"],
+            "status": "ready",
+            "private": False,
+            "created_at": datetime.utcnow(),
+            "players": [player1["user_id"], player2["user_id"]]
+        }).inserted_id
+
+        # Store the game ID in the session for both players
+        session['game_id'] = str(game_id)
+
+        # Notify the first player by setting a "game_found" flag
+        waiting_users_collection.update_one(
+            {"_id": player1['_id']},
+            {"$set": {"game_found": True, "game_id": str(game_id)}}
         )
-        session['game_id'] = str(game['_id'])
-        # Notify the first player and redirect both to the load_image page
+
+        # Immediately redirect the second player to the game ready page
+        waiting_users_collection.delete_one({"_id": player2['_id']})
         return redirect(url_for('game_ready'))
-    else:
-        # No public games available, move to the waiting room
-        return render_template('waiting_room.html', game_code=None)
+
+    # If no match was found yet, redirect to the waiting room for random games
+    flash('Waiting for another player to join...')
+    return redirect(url_for('waiting_room_random_game'))
+
 
 @app.route('/check-game')
 @login_required
@@ -170,25 +169,66 @@ def check_game():
         game = mongo.db.games.find_one({"_id": ObjectId(game_id)})
         if game and game['player2_id']:
             return jsonify({"game_found": True})
+    else:
+        # Check if the current user has been paired up in a game
+        waiting_user = waiting_users_collection.find_one({"user_id": current_user.id})
+        if waiting_user and waiting_user.get("game_found"):
+            session['game_id'] = waiting_user.get("game_id")
+
+            # Cleanup the waiting user entry after the game is found
+            waiting_users_collection.delete_one({"_id": waiting_user['_id']})
+
+            return jsonify({"game_found": True})
     return jsonify({"game_found": False})
 
-@app.route('/enter-code')
+@app.route('/waiting-room-random-game')
+@login_required
+def waiting_room_random_game():
+    return render_template('waiting_room_random_game.html')
+
+
+@app.route('/enter-code', methods=['GET', 'POST'])
 @login_required
 def enter_code():
+    if request.method == 'POST':
+        game_code = request.form['gameCode']
+
+        # Look for the game in the database using the provided code
+        game = mongo.db.games.find_one({"game_code": game_code, "player2_id": None})
+
+        if game:
+            # Pair the user with the game
+            mongo.db.games.update_one(
+                {"_id": game["_id"]},
+                {"$set": {"player2_id": current_user.id, "status": "ready"},
+                 "$push": {"players": current_user.id}}
+            )
+
+            # Redirect both players to the game ready page
+            session['game_id'] = str(game['_id'])
+            return redirect(url_for('game_ready'))
+
+        else:
+            flash('Invalid or already used game code. Please try again.', 'error')
+            return redirect(url_for('enter_code'))
+
     return render_template('enter_code.html')
+
+
+
+
 
 @app.route('/game-ready')
 @login_required
 def game_ready():
     game_id = session.get('game_id')
-    if not game_id:
-        flash('No game found.', 'error')
-        return redirect(url_for('home'))
+    if game_id:
+        game = mongo.db.games.find_one({"_id": ObjectId(game_id)})
+        if game:
+            return render_template('game_ready.html', game=game)
+    return redirect(url_for('home'))
 
-    game = mongo.db.games.find_one({"_id": ObjectId(game_id)})
-    if game:
-        # Notify all players and redirect to the game page
-        return render_template('load_image.html', players=game['players'])
-    else:
-        flash('Game no longer exists.', 'error')
-        return redirect(url_for('home'))
+
+@app.route('/load_image')
+def load_image():
+    return render_template('load_image.html')

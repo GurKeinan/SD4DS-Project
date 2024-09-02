@@ -1,11 +1,9 @@
-version: '3'
-
 services:
   web:
     build: .
     container_name: face-merge-web
     ports:
-      - "8000:5000"
+      - "5001:5000"  # Maps port 5000 inside the container to port 5001 on your host machine
     networks:
       - face-merge-net
     depends_on:

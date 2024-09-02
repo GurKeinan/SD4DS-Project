@@ -14,11 +14,17 @@
         href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css"
         crossorigin="anonymous"
     />
-    <title>Join Game with Code</title>
+    <title>Waiting Room</title>
 </head>
+
 <body>
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbar">
+        <button
+            class="navbar-toggler"
+            type="button"
+            data-toggle="collapse"
+            data-target="#navbar"
+        >
             <span class="navbar-toggler-icon"></span>
         </button>
         <div class="collapse navbar-collapse" id="navbar">
@@ -36,30 +42,34 @@
     </nav>
 
     <div class="container mt-5">
-        <h2>Join Game with Code</h2>
-        <form method="POST" action="/enter-code">
-            <div class="form-group">
-                <label for="gameCode">Enter Game Code</label>
-                <input type="text" class="form-control" id="gameCode" name="gameCode" required>
-            </div>
-            <button type="submit" class="btn btn-primary">Join Game</button>
-        </form>
+        <h2>Waiting Room</h2>
+        <p class="lead">
+            Waiting for another player to join the game. You will be redirected automatically once a match is found.
+        </p>
+        <div class="alert alert-primary" role="alert">
+            <h3>Searching for a player...</h3>
+        </div>
+        <p>
+            Please wait while we find another player. You will be notified and redirected when a match is found.
+        </p>
     </div>
 
-    <script
-        src="https://code.jquery.com/jquery-3.2.1.slim.min.js"
-        integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN"
-        crossorigin="anonymous"
-    ></script>
-    <script
-        src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"
-        integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q"
-        crossorigin="anonymous"
-    ></script>
-    <script
-        src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"
-        integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl"
-        crossorigin="anonymous"
-    ></script>
+    <script>
+        function checkForGame() {
+            fetch('/check-game')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.game_found) {
+                        window.location.href = "/game-ready";
+                    } else {
+                        setTimeout(checkForGame, 3000);  // Poll again after 3 seconds
+                    }
+                });
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(checkForGame, 3000);  // Start polling after 3 seconds
+        });
+    </script>
 </body>
 </html>
