@@ -1,3 +1,5 @@
+import time
+
 from flask import Flask, request, jsonify
 import os
 from werkzeug.utils import secure_filename
@@ -7,6 +9,9 @@ import threading
 import torch
 from torchvision import models, transforms
 from PIL import Image
+
+start_time = time.time() # TODO: where should this be defined?
+
 
 # Load ResNet model
 model = models.resnet50(pretrained=True)
@@ -158,22 +163,22 @@ def get_result(request_id):
 
 @app.route('/status', methods=['GET'])
 def get_status():
-    uptime = 123.45  # Replace with actual uptime calculation
     processed = {
         'success': db.requests.count_documents({'status': 'completed'}),
         'fail': db.requests.count_documents({'status': 'error'}),
         'running': db.requests.count_documents({'status': 'running'}),
         'queued': 0  # Replace with actual queue status if implemented
     }
-    
+
     return jsonify({
         'status': {
-            'uptime': uptime,
+            'uptime': time.time() - start_time,
             'processed': processed,
             'health': 'ok',
             'api_version': 2
         }
     }), 200
 
+
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
+    app.run(host='0.0.0.0', port=5001)
