@@ -4,3 +4,4 @@ pymongo
 torch
 torchvision
 Pillow
+requests

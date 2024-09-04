@@ -14,7 +14,8 @@ start_time = time.time() # TODO: where should this be defined?
 
 
 # Load ResNet model
-model = models.resnet50(pretrained=True)
+from torchvision.models import ResNet50_Weights
+model = models.resnet50(weights=ResNet50_Weights.IMAGENET1K_V1)
 model.eval()
 
 # Load class labels from classes.txt
