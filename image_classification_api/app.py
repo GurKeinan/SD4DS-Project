@@ -18,7 +18,8 @@ model = models.resnet50(pretrained=True)
 model.eval()
 
 # Load class labels from classes.txt
-with open('imagenet-classes.txt') as f:
+imagenet_classes_path = os.path.join(os.path.dirname(__file__), 'imagenet-classes.txt')
+with open(imagenet_classes_path) as f:
     class_names = [line.strip() for line in f.readlines()]
 
 # Define the image transformation pipeline
@@ -170,7 +171,7 @@ def get_status():
         'queued': 0  # Replace with actual queue status if implemented
     }
 
-    return jsonify({
+    return jsonify({  # TODO: make sure that jsonify means that the server will have Content-Type: application/json
         'status': {
             'uptime': time.time() - start_time,
             'processed': processed,
@@ -181,4 +182,5 @@ def get_status():
 
 
 if __name__ == '__main__':
+    print('hiiiiiiiiiiiiiiii the if __name__ == __main__ is running')
     app.run(host='0.0.0.0', port=5001)
