@@ -37,21 +37,21 @@
     <label for="file">Upload a photo:</label>
     <input type="file" name="file" id="file" accept="image/*" onchange="previewFile()"><br><br>
 
-    <br><br>
-
     <!-- Text input to search for photos -->
     <label for="photo-search">Search for photos:</label>
     <input type="text" id="photo-search" placeholder="Enter text to search for photos">
     <button type="button" onclick="searchPhotos()">Search</button>
 
+    <br><br>
+
     <!-- Scrollable container for predefined or fetched images -->
-    <div id="photo-grid">
+    <div id="photo-grid" style="width: 1050px;">
         <!-- Photos will be dynamically inserted here -->
     </div>
 
     <!-- Image preview -->
     <h3>Selected Photo:</h3>
-    <img id="selected-photo" src="" alt="No photo selected" width="300" style="display: none;">
+    <img id="selected-photo" src="" alt="No photo selected" width="200" style="display: none;">
 
     <!-- Form submit button -->
     <form method="POST" enctype="multipart/form-data">
@@ -101,11 +101,12 @@
                 photoGrid.innerHTML = '';
 
                 // Add the new photos returned by the server
-                data.photos.forEach(url => {
+                data.photos.forEach(res => {
                     const img = document.createElement('img');
-                    img.src = url;
+                    img.src = res.url;
                     img.width = 100;
-                    img.onclick = () => selectPhoto(url);
+                    img.alt = res.alt;
+                    img.onclick = () => selectPhoto(res.url);
                     photoGrid.appendChild(img);
                 });
             });

@@ -12,41 +12,62 @@ API_KEY = 'AIzaSyB3Hi3ca28V8fXz8ZsXG6_5uB2UGY1_MJw'
 CX = '83884353925084eaa'
 
 SEARCH_URL = 'https://www.googleapis.com/customsearch/v1'
-MAX_INDEX = 10
+MAX_INDEX = 1
 
 
-def fetch_photos(query, prefix='portrait of', start_index=1):  # CHECK portrait of
+def fetch_photos(query, prefix='', suffix='', start_index=1):
+    q = query
+    if prefix:
+        q = prefix + ' ' + q
+    if suffix:
+        q = q + ' ' + suffix
     params = {
         'key': API_KEY,
         'cx': CX,
-        'q': prefix + ' ' + query if (prefix is not None and len(prefix) > 0) else query,
+        'q': q,
         'searchType': 'image',
         'start': start_index,  # Starting index for pagination
-        'num': 10  # Number of results per page (up to 10)
+        'num': 10,  # Number of results per page (up to 10)
+        # 'imgSize': 'large' # CHECK Filter by image size
     }
 
     response = requests.get(SEARCH_URL, params=params)
 
     data = response.json()
-    res = [(item['link'], item['title']) for item in data.get('items', [])]
+    links = [item['link'] for item in data.get('items', [])]
+    alts = [item.get('title', '') for item in data.get('items', [])]
+    photos_sizes = [(item['image']['height'], item['image']['width']) for item in data.get('items', [])]
     # Print image URLs from the first page  CHECK more pages
-    return res
+    return links, alts, photos_sizes
 
 
-def fetch_photos_extended(query, amount=10, prefix='portrait of'):  # CHECK portrait of
+def fetch_photos_extended(query, amount=10, check_size=False, prefix='', suffix='portrait'):  # CHECK portrait of
     current_amount = 0
     start_index = 1
     photo_urls = []
-    prev_len = -1
-    while current_amount < amount and start_index < MAX_INDEX:
-        photo_urls += fetch_photos(query, prefix, start_index)
-        photo_urls = list(set(photo_urls))
-        current_amount = len(photo_urls)
-        if prev_len == current_amount:
+    photos_alts = []
+    # prev_len = 0
+    while current_amount < amount and start_index <= MAX_INDEX:
+        # print(start_index, current_amount)
+        links, alts, photos_sizes = fetch_photos(query, prefix, suffix, start_index)
+        if len(links) == 0:
+            print('No photos found in index', start_index)
             break
+        for i in range(len(links)):
+            if current_amount >= amount:
+                break
+
+            if (photos_sizes[i][0] >= photos_sizes[i][1] or not check_size) and links[i] not in photo_urls:
+                photo_urls.append(links[i])
+                photos_alts.append(alts[i])
+                current_amount += 1
+        # if prev_len == current_amount or current_amount >= amount:
+        #     break
         start_index += 1
-        prev_len = current_amount
-    return photo_urls[:amount]
+        # prev_len = current_amount
+    if current_amount < amount:
+        print('Not enough photos found')
+    return [{'url': photo_urls[i], 'alt': photos_alts[i]} for i in range(len(photo_urls))]
 
 
 @app.route("/")
@@ -61,7 +82,11 @@ def search_photos():
     query = data.get('query', '')
 
     # Call the function to get the URLs based on the text query
-    photo_urls = fetch_photos_extended(query, 20)
+    photo_urls = fetch_photos_extended(query, amount=10)
+    # for photo in photo_urls:
+    #     print(photo['url'])
+    #     print(photo['alt'])
+    #     print('\n')
 
     # Return the URLs as a JSON response
     return jsonify({"photos": photo_urls})
