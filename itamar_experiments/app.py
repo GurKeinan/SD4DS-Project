@@ -28,7 +28,7 @@ def fetch_photos(query, prefix='', suffix='', start_index=1):
         'searchType': 'image',
         'start': start_index,  # Starting index for pagination
         'num': 10,  # Number of results per page (up to 10)
-        # 'imgSize': 'large' # CHECK Filter by image size
+        'imgSize': 'large'  # CHECK Filter by image size
     }
 
     response = requests.get(SEARCH_URL, params=params)
