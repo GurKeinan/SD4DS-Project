@@ -1,6 +1,7 @@
 from flask import Flask, render_template, request, jsonify
 import os
 import requests
+import csv
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = 'static/uploads'  # Folder to save uploaded photos
@@ -8,11 +9,17 @@ app.config['UPLOAD_FOLDER'] = 'static/uploads'  # Folder to save uploaded photos
 # Make sure the upload folder exists
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
-API_KEY = 'AIzaSyB3Hi3ca28V8fXz8ZsXG6_5uB2UGY1_MJw'
-CX = '83884353925084eaa'
-
 SEARCH_URL = 'https://www.googleapis.com/customsearch/v1'
+KEY_PATH = 'search_engine_key.csv'
 MAX_INDEX = 1
+
+
+with open(KEY_PATH, 'r') as file:
+    reader = csv.reader(file)
+    _ = next(reader)
+    CX, API_KEY = next(reader)
+    # print(CX)
+    # print(API_KEY)
 
 
 def fetch_photos(query, prefix='', suffix='', start_index=1):
