@@ -183,5 +183,4 @@ def get_status():
 
 
 if __name__ == '__main__':
-    print('hiiiiiiiiiiiiiiii the if __name__ == __main__ is running')
     app.run(host='0.0.0.0', port=5001)

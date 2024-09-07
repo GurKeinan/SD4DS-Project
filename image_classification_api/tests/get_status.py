@@ -12,13 +12,11 @@ class TestStatusEndpoint(unittest.TestCase):
     def setUpClass(cls):
         port = 5000
         cls.BASE_URL = f"http://localhost:{port}"
-        print('hiiiiiiiiiiiiii before app.app.run')
         def run_flask():
             app.app.run(host='0.0.0.0', port=port)
 
         threading.Thread(target=run_flask, daemon=True).start()
         # Daemon threads automatically shut down when the main process exits.
-        print('hiiiiiiiiiiiiii after app.app.run')
 
     def test_status_endpoint(self):
         response = requests.get(f"{self.BASE_URL}/status")
