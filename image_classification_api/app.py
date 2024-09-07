@@ -34,7 +34,7 @@ preprocess = transforms.Compose([
 app = Flask(__name__)
 
 # Set up MongoDB connection
-client = MongoClient('mongodb://image-classification-db:27017/')
+client = MongoClient('mongodb://image-classification-db:27017/')  # it is 27017 because it is like that in the docker-compose file?
 db = client['image_classification']
 
 # Define allowed extensions
