@@ -2,7 +2,8 @@ import unittest
 import requests
 import time
 import threading
-import app
+import app   # works if CMD ["python", "-m", "tests.get_status"]
+
 
 
 class TestStatusEndpoint(unittest.TestCase):

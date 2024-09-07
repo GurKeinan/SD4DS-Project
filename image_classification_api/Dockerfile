@@ -1,4 +1,5 @@
 FROM python:3.10-slim
+# The above line is the base image for the docker container.
 
 WORKDIR /app
 
@@ -9,3 +10,4 @@ COPY . .
 
 #CMD ["gunicorn", "-w", "4", "-b", "0.0.0.0:5000", "app:app"]
 CMD ["python", "-m", "tests.get_status"]
+
