@@ -77,6 +77,20 @@ def fetch_photos_extended(query, amount=10, check_size=False, prefix='', suffix=
     return [{'url': photo_urls[i], 'alt': photos_alts[i]} for i in range(len(photo_urls))]
 
 
+def save_image_from_url(url, file_name):
+    # Send a GET request to the URL
+    response = requests.get(url)
+
+    # Check if the request was successful
+    if response.status_code == 200:
+        # Open a file in binary write mode and save the image
+        with open(file_name, 'wb') as image_file:
+            image_file.write(response.content)
+        print(f"Image successfully saved as {file_name}")
+    else:
+        print("Failed to retrieve the image.")
+
+
 @app.route("/")
 def index():
     return render_template("upload.html")
@@ -106,13 +120,21 @@ def handle_form_submission():
     if 'file' in request.files and request.files['file'].filename != '':
         uploaded_file = request.files['file']
         # Process the uploaded file (e.g., save it to the server)
-        uploaded_file.save(os.path.join('uploads', uploaded_file.filename))
+        uploaded_file.save(os.path.join(app.config['UPLOAD_FOLDER'], uploaded_file.filename))
         photo_url = f"/uploads/{uploaded_file.filename}"
         return f"File uploaded successfully: {photo_url}"
 
-    # Check if the user selected a predefined photo
+    #
+    # # Check if the user selected a predefined photo
+    # selected_photo_url = request.form.get('selected-photo-url', '')
+    # if selected_photo_url:
+    #     return f"Selected predefined photo: {selected_photo_url}"
+
     selected_photo_url = request.form.get('selected-photo-url', '')
     if selected_photo_url:
+        # CHECK save with a name - player i photo
+        # TODO we can take the text that was search in order to extract the name of the person
+        save_image_from_url(selected_photo_url, os.path.join(app.config['UPLOAD_FOLDER'], 'selected_photo.jpg'))
         return f"Selected predefined photo: {selected_photo_url}"
 
     return "No photo was uploaded or selected."
