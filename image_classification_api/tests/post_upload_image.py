@@ -2,10 +2,12 @@ import unittest
 from .base_test import BaseAPITest
 import requests
 
+
 class TestUploadImage(BaseAPITest):
     def setUp(self):
         super().setUp()
         self.endpoint = self.BASE_URL + '/upload_image'
+
     def test_it_returns_200_when_image_is_uploaded(self):
         test_files = [('tests/assets/test_img.jpeg', 'image/jpeg'), ('tests/assets/britney.png', 'image/png')]
         for file, MIME_type in test_files:

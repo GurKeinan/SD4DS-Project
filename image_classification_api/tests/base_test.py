@@ -4,6 +4,7 @@ import app  # works if CMD ["python", "-m", "tests.get_status"]
 # or if running python -m unittest discover
 # or if running python -m unittest discover <name of directory with tests>
 
+
 class BaseAPITest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
