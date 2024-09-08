@@ -51,6 +51,10 @@ def allowed_file(filename):
 def classify_image(filepath):
     # Open the image file
     img = Image.open(filepath)
+
+    # Convert PNG images (with alpha channel) to RGB
+    if img.mode == 'RGBA':
+        img = img.convert('RGB')
     
     # Preprocess the image
     img_t = preprocess(img)
