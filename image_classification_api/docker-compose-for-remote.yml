@@ -10,12 +10,10 @@ services:
       - "27017:27017"
 
   web:
-    build: .
-    container_name: image-classification-api
+    image: image_classification_api-web
+    working_dir: /app
     ports:
       - "5000:5000"  # TODO: change to 6000 because Stav asked
-    volumes:
-      - .:/app
     depends_on:
       - mongo
 
