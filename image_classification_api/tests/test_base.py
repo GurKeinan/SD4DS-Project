@@ -7,6 +7,9 @@ import socket
 class BaseAPITest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
+        cls.test_image_png = 'tests/assets/britney.png'
+        cls.test_image_jpeg = 'tests/assets/test_img.jpeg'
+
         port = 5000
         cls.BASE_URL = f"http://localhost:{port}"
 
