@@ -3,24 +3,21 @@ the image classification API on our VM without building it
 on the VM itself, but rather building on the personal laptop.
 
 docker-compose build
-docker save -o to_remote_image.tar image_classification_api-web
-gzip to_remote_image.tar  # zip the .tar file
-scp to_remote_image.tar.gz student@<IP address>:
-scp docker-compose-for-remote.yml student@<IP address>:
 
-# scp means secure copy, it is like ssh but for copying files
-# the IP address changes every time you start the VM
+NOW PUSH THE IMAGE TO DOCKERHUB
 
+CONNECT TO THE VM BY:
 ssh student@<IP address>
-###### on the VM
-gunzip to_remote_image.tar.gz
-docker load -i to_remote_image.tar
-mv docker-compose-for-remote.yml docker-compose.yml
 
+PULL THE IMAGE FROM DOCKERHUB ON THE VM
 
 # and finally, run by:
 #docker-compose run web <command to be executed in the container>
 # for example:
 
-docker compose run web python -m tests.post_upload_image
+docker compose run web python -m tests.test_post_upload_image
+
+OR:
+
+docker compose run web python -m unittest discover   # to run all tests
 

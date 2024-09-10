@@ -1,4 +1,5 @@
-FROM python:3.10-slim
+FROM pytorch/pytorch:latest
+
 # The above line is the base image for the docker container.
 
 WORKDIR /app
