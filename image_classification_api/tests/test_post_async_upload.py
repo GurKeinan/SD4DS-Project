@@ -10,8 +10,45 @@ class MyTestCase(BaseAPITest):
         self.endpoint = self.BASE_URL + '/async_upload'
         self.test_image_png = 'tests/assets/britney.png'
         self.test_image_jpeg = 'tests/assets/test_img.jpeg'
-    def test_something(self):
-        self.assertEqual(True, False)  # add assertion here
+
+    def test_it_returns_202_when_image_is_uploaded(self):
+        test_files = [(self.test_image_jpeg, 'image/jpeg'), (self.test_image_png, 'image/png')]
+        for file, MIME_type in test_files:
+            with self.subTest(file=file):
+                with open(file, 'rb') as f:
+                    files = {'image': (file, f, MIME_type)}
+                    response = requests.post(self.endpoint, files=files)
+                self.assertEqual(response.status_code, 202)
+
+    def test_request_id_is_returned_and_in_correct_format(self):
+        with open(self.test_image_png, 'rb') as f:
+            files = {'image': ('britney.png', f, 'image/png')}
+            response = requests.post(self.endpoint, files=files)
+        self.assertEqual(response.status_code, 202)
+        self.assertIn('request_id', response.json())
+        request_id = response.json()['request_id']
+        self.assertIsInstance(request_id, int)
+        # assert it is in [10000, 1000000]:
+        self.assertGreaterEqual(int(request_id), 10000)
+        self.assertLessEqual(int(request_id), 1000000)
+
+    def test_uniqueness_of_request_id(self):
+        with open(self.test_image_png, 'rb') as f:
+            files = {'image': ('britney.png', f, 'image/png')}
+            response = requests.post(self.endpoint, files=files)
+        self.assertEqual(response.status_code, 202)
+        request_id1 = response.json()['request_id']
+        with open(self.test_image_jpeg, 'rb') as f:
+            files = {'image': ('test_img.jpeg', f, 'image/jpeg')}
+            response = requests.post(self.endpoint, files=files)
+        self.assertEqual(response.status_code, 202)
+        request_id2 = response.json()['request_id']
+        self.assertNotEqual(request_id1, request_id2)
+
+    def test_it_returns_400_when_no_file_is_uploaded(self):
+        response = requests.post(self.endpoint)
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.json(), {'error': {'code': 400, 'message': 'No file part'}})
 
 
 if __name__ == '__main__':

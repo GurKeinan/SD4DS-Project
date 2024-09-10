@@ -46,6 +46,8 @@ class TestUploadImage(BaseAPITest):
         self._test_successful_upload(self.test_image_png)
         self._test_successful_upload(self.test_image_jpeg)
 
+
+
     def test_it_returns_400_when_no_file_is_uploaded(self):
         response = requests.post(self.endpoint)
         self.assertEqual(response.status_code, 400)

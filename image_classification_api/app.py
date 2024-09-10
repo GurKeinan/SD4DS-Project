@@ -1,3 +1,4 @@
+import random
 import time
 
 from flask import Flask, request, jsonify
@@ -46,13 +47,19 @@ def allowed_file(filename):
     return '.' in filename and \
         filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
+def generate_unique_id():
+    """Generate a unique request ID randomly in the range [10000, 1000000]"""
+    while True:
+        new_id = random.randint(10000, 1000000)
+        if db.requests.find_one({'request_id': new_id}) is None:
+            return new_id
+
 
 # def classify_image(filepath):
 #     # Dummy implementation, replace with actual model inference
 #     return [{'name': 'tomato', 'score': 0.9}, {'name': 'carrot', 'score': 0.02}]
 
 def classify_image(filepath):
-    # Open the image file
     img = Image.open(filepath)
 
     # Convert PNG images (with an alpha channel) to RGB
@@ -72,7 +79,6 @@ def classify_image(filepath):
     percentages = torch.nn.functional.softmax(out, dim=1)[0] * 100
     predictions = [(class_names[idx], percentages[idx].item()) for idx in indices[0]]
 
-    # Return the predictions in the expected format
     return [{'name': name, 'score': score / 100} for name, score in predictions]
 
 
@@ -114,7 +120,7 @@ def async_upload():
         filepath = os.path.join('/tmp', filename)
         file.save(filepath)
 
-        request_id = str(uuid.uuid4())
+        request_id = generate_unique_id()
 
         # Save the request status as 'running'
         db.requests.insert_one({
@@ -184,7 +190,7 @@ def get_status():
         'queued': 0  # Replace it with actual queue status if implemented
     }
 
-    return jsonify({  # TODO: make sure that jsonify means that the server will have Content-Type: application/json
+    return jsonify({
         'status': {
             'uptime': time.time() - start_time,
             'processed': processed,
