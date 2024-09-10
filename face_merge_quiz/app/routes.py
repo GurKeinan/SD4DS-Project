@@ -2,6 +2,10 @@ import random
 import string
 from flask import render_template, redirect, url_for, flash, request, jsonify, session
 from flask_login import login_user, logout_user, current_user, login_required
+from flask import render_template, redirect, url_for, flash, request
+from flask_login import login_user, logout_user, login_required
+from . import app, mongo, bcrypt, login_manager
+from .models import User
 from bson.objectid import ObjectId
 from datetime import datetime
 from app import app, mongo, bcrypt, login_manager, waiting_users_collection
@@ -44,6 +48,7 @@ def sign_up():
             "username": username,
             "password": hashed_password,
             "wins": 0,
+            "wins": 0,  # TODO tie? or maybe just success?
             "losses": 0
         }).inserted_id
 
@@ -232,3 +237,4 @@ def game_ready():
 @app.route('/load_image')
 def load_image():
     return render_template('load_image.html')
+

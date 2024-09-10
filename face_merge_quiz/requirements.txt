@@ -3,3 +3,4 @@ Flask-PyMongo
 Flask-Bcrypt
 Flask-Login
 gunicorn
+requests

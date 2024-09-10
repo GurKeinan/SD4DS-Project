@@ -8,6 +8,10 @@ services:
       - face-merge-net
     depends_on:
       - mongodb
+    volumes:
+      - .:/app
+    env_file:
+      - .env
 
   mongodb:
     image: mongo
