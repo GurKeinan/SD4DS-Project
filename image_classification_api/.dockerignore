@@ -1,0 +1,5 @@
+# ignore .tar files since they might be heavy
+*.tar
+
+# as well as zipped .tar files
+*.tar.gz
