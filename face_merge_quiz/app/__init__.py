@@ -14,7 +14,7 @@ login_manager.login_view = 'login'
 
 waiting_users_collection = mongo.db.waiting_users  # New collection for waiting users
 
-from app import routes
+from . import routes
 
 @app.context_processor
 def inject_user():
@@ -22,4 +22,3 @@ def inject_user():
 
 # if __name__ == '__main__':
 #     app.run(debug=True, host='0.0.0.0', port=5001)
-from . import routes

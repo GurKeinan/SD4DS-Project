@@ -10,6 +10,7 @@ from bson.objectid import ObjectId
 from datetime import datetime
 from app import app, mongo, bcrypt, login_manager, waiting_users_collection
 from app.models import User
+from .utils import fetch_photos_extended
 
 
 @login_manager.user_loader
@@ -220,9 +221,6 @@ def enter_code():
     return render_template('enter_code.html')
 
 
-
-
-
 @app.route('/game-ready')
 @login_required
 def game_ready():
@@ -238,3 +236,17 @@ def game_ready():
 def load_image():
     return render_template('load_image.html')
 
+@app.route("/search_photos", methods=["POST"])
+def search_photos():
+    data = request.get_json()
+    query = data.get('query', '')
+
+    # Call the function to get the URLs based on the text query
+    photo_urls = fetch_photos_extended(query, amount=10)
+    # for photo in photo_urls:
+    #     print(photo['url'])
+    #     print(photo['alt'])
+    #     print('\n')
+
+    # Return the URLs as a JSON response
+    return jsonify({"photos": photo_urls})

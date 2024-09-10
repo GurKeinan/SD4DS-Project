@@ -1,67 +1,238 @@
 <!DOCTYPE html>
 <html lang="en">
-    <head>
-        <meta charset="utf-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <link
-            rel="stylesheet"
-            href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css"
-            integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh"
-            crossorigin="anonymous"
-        />
-        <link
-            rel="stylesheet"
-            href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css"
-            crossorigin="anonymous"
-        />
-        <title>Load Image</title>
-    </head>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload or Choose Photo</title>
+    <link
+        rel="stylesheet"
+        href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css"
+        integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh"
+        crossorigin="anonymous"
+    />
+    <link
+        rel="stylesheet"
+        href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css"
+        crossorigin="anonymous"
+    />
+    <style>
+        /* Basic styling for image selection */
+        img {
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: border-color 0.3s ease;
+            max-width: 100%;
+        }
+        img.selected {
+            border-color: blue;
+        }
 
-    <body>
-        <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-            <button
-                class="navbar-toggler"
-                type="button"
-                data-toggle="collapse"
-                data-target="#navbar"
-            >
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbar">
-                <div class="navbar-nav">
-                    <a class="nav-item nav-link" id="home" href="/">Home</a>
-                    {% if user.is_authenticated %}
-                    <a class="nav-item nav-link" id="join_game" href="/join-game">Join a Game</a>
-                    <a class="nav-item nav-link" id="logout" href="/logout">Logout</a>
-                    {% else %}
-                    <a class="nav-item nav-link" id="login" href="/login">Login</a>
-                    <a class="nav-item nav-link" id="signUp" href="/sign-up">Sign Up</a>
-                    {% endif %}
-                </div>
+        /* Scrollable container for images */
+        #photo-grid {
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid #ccc;
+            padding: 10px;
+        }
+
+        /* Style the images inside the grid */
+        #photo-grid img {
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <button
+            class="navbar-toggler"
+            type="button"
+            data-toggle="collapse"
+            data-target="#navbar"
+        >
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbar">
+            <div class="navbar-nav">
+                <a class="nav-item nav-link" id="home" href="/">Home</a>
+                {% if user.is_authenticated %}
+                <a class="nav-item nav-link" id="join_game" href="/join-game">Join a Game</a>
+                <a class="nav-item nav-link" id="logout" href="/logout">Logout</a>
+                {% else %}
+                <a class="nav-item nav-link" id="login" href="/login">Login</a>
+                <a class="nav-item nav-link" id="signUp" href="/sign-up">Sign Up</a>
+                {% endif %}
             </div>
-        </nav>
-
-        <div class="container mt-5">
-            <h2>Load Image Placeholder</h2>
-            <p class="lead">
-                This is where users will upload images once the game has started. For now, it's just a placeholder.
-            </p>
         </div>
+    </nav>
 
-        <script
-            src="https://code.jquery.com/jquery-3.2.1.slim.min.js"
-            integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN"
-            crossorigin="anonymous"
-        ></script>
-        <script
-            src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"
-            integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q"
-            crossorigin="anonymous"
-        ></script>
-        <script
-            src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"
-            integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl"
-            crossorigin="anonymous"
-        ></script>
-    </body>
+    <!-- Main Content -->
+    <div class="container mt-5">
+        <h1>Upload a Photo or Choose a Predefined One</h1>
+
+        <form method="POST" enctype="multipart/form-data">
+
+            <!-- Upload button -->
+            <div class="form-group">
+                <label for="file">Upload a photo:</label>
+                <input type="file" class="form-control-file" capture="camera"
+                       name="file" id="file" accept="image/*" onchange="previewFile()">
+            </div>
+
+            <!-- Text input to search for photos -->
+            <div class="form-group">
+                <label for="photo-search">Search for photos:</label>
+                <input type="text" class="form-control" id="photo-search" placeholder="Enter text to search for photos">
+                <button type="button" class="btn btn-primary mt-2" onclick="searchPhotos()">Search</button>
+            </div>
+
+            <!-- Scrollable container for predefined or fetched images -->
+            <div id="photo-grid" class="container" style="width: 100%;">
+                <!-- Photos will be dynamically inserted here -->
+            </div>
+
+            <!-- Image preview -->
+            <h3>Selected Photo:</h3>
+            <img id="selected-photo" src="" alt="No photo selected" class="img-fluid" width="200" style="display: none;">
+
+            <input type="hidden" name="selected-photo-url" id="selected-photo-url"><br>
+
+            <!-- Form submit button -->
+            <button type="submit" class="btn btn-success mt-3">Submit</button>
+
+            <hr>
+
+            <!-- Answers Form Section -->
+            <h2>Enter the Possible Answers</h2>
+            <p class="lead">The first answer should be the correct name, and the other two should be distractions.</p>
+
+            <div class="form-group">
+                <label for="correct-answer">Correct Answer (Name of the Person in the Picture):</label>
+                <input type="text" class="form-control" id="correct-answer" name="correct-answer" placeholder="Enter the correct name" required>
+            </div>
+
+            <div class="form-group">
+                <label for="distraction1">Distraction Answer 1:</label>
+                <input type="text" class="form-control" id="distraction1" name="distraction1" placeholder="Enter a distraction name" required>
+            </div>
+
+            <div class="form-group">
+                <label for="distraction2">Distraction Answer 2:</label>
+                <input type="text" class="form-control" id="distraction2" name="distraction2" placeholder="Enter another distraction name" required>
+            </div>
+
+            <!-- Final Submit Button for the Form -->
+            <button type="submit" class="btn btn-primary mt-3">Submit Answers</button>
+
+        </form>
+    </div>
+
+    <script>
+        // Function to display the file uploaded by the user
+        function previewFile() {
+            const preview = document.getElementById('selected-photo');
+            const fileInput = document.getElementById('file');
+            const file = fileInput.files[0];
+            const reader = new FileReader();
+
+            reader.addEventListener("load", function () {
+                // Display the uploaded file
+                preview.src = reader.result;
+                preview.style.display = 'block';
+
+                // Clear any selected photo URL
+                document.getElementById('selected-photo-url').value = '';
+
+                // Unselect any preselected images
+                clearSelectedImages();
+            }, false);
+
+            if (file) {
+                reader.readAsDataURL(file);
+            }
+        }
+
+        // Function to dynamically search for photos
+        function searchPhotos() {
+            const query = document.getElementById('photo-search').value;
+
+            fetch('/search_photos', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ query: query }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Clear existing photos in the grid
+                const photoGrid = document.getElementById('photo-grid');
+                photoGrid.innerHTML = '';
+
+                // Add the new photos returned by the server
+                data.photos.forEach(res => {
+                    const img = document.createElement('img');
+                    img.src = res.url;
+                    img.width = 100;
+                    img.alt = res.alt;
+                    img.onclick = () => selectPhoto(res.url);
+                    photoGrid.appendChild(img);
+                });
+            });
+        }
+
+        // Function to select a photo from search results
+        function selectPhoto(photoUrl) {
+            const preview = document.getElementById('selected-photo');
+            preview.src = photoUrl;
+            preview.style.display = 'block';
+
+            // Set the hidden input to hold the selected photo URL
+            document.getElementById('selected-photo-url').value = photoUrl;
+
+            // Clear file input since a predefined photo was selected
+            clearFileInput();
+
+            // Highlight selected image and unselect others
+            clearSelectedImages();
+            const images = document.querySelectorAll('#photo-grid img');
+            images.forEach(img => {
+                if (img.src === photoUrl) {
+                    img.classList.add('selected');
+                }
+            });
+        }
+
+        // Clear the file input if a photo from the search is selected
+        function clearFileInput() {
+            const fileInput = document.getElementById('file');
+            fileInput.value = '';
+        }
+
+        // Clear selected images' styles
+        function clearSelectedImages() {
+            const images = document.querySelectorAll('#photo-grid img');
+            images.forEach(img => {
+                img.classList.remove('selected');
+            });
+        }
+    </script>
+
+    <!-- Bootstrap JS -->
+    <script
+        src="https://code.jquery.com/jquery-3.2.1.slim.min.js"
+        integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN"
+        crossorigin="anonymous"
+    ></script>
+    <script
+        src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"
+        integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q"
+        crossorigin="anonymous"
+    ></script>
+    <script
+        src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"
+        integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl"
+        crossorigin="anonymous"
+    ></script>
+</body>
 </html>
