@@ -4,7 +4,7 @@ import time
 from .test_base import BaseAPITest
 
 
-class TestStatus(BaseAPITest):
+class TestGetStatus(BaseAPITest):
     def test_status_endpoint(self):
         response = requests.get(f"{self.BASE_URL}/status")
 

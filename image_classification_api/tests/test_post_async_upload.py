@@ -3,13 +3,12 @@ from .test_base import BaseAPITest
 import requests
 
 
-class MyTestCase(BaseAPITest):
+class TestPostAsyncUpload(BaseAPITest):
 
     def setUp(self):
         super().setUp()
         self.endpoint = self.BASE_URL + '/async_upload'
-        self.test_image_png = 'tests/assets/britney.png'
-        self.test_image_jpeg = 'tests/assets/test_img.jpeg'
+
 
     def test_it_returns_202_when_image_is_uploaded(self):
         test_files = [(self.test_image_jpeg, 'image/jpeg'), (self.test_image_png, 'image/png')]

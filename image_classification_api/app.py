@@ -5,7 +5,6 @@ from flask import Flask, request, jsonify
 import os
 from werkzeug.utils import secure_filename
 from pymongo import MongoClient
-import uuid
 import threading
 import torch
 from torchvision import models, transforms
@@ -60,24 +59,23 @@ def generate_unique_id():
 #     return [{'name': 'tomato', 'score': 0.9}, {'name': 'carrot', 'score': 0.02}]
 
 def classify_image(filepath):
-    img = Image.open(filepath)
+    with Image.open(filepath) as img:
+        # Convert PNG images (with an alpha channel) to RGB
+        if img.mode == 'RGBA':
+            img = img.convert('RGB')
 
-    # Convert PNG images (with an alpha channel) to RGB
-    if img.mode == 'RGBA':
-        img = img.convert('RGB')
+        # Preprocess the image
+        img_t = preprocess(img)
+        batch_t = torch.unsqueeze(img_t, 0)
 
-    # Preprocess the image
-    img_t = preprocess(img)
-    batch_t = torch.unsqueeze(img_t, 0)
+        # Perform inference
+        with torch.no_grad():
+            out = model(batch_t)
 
-    # Perform inference
-    with torch.no_grad():
-        out = model(batch_t)
-
-    # Get the top 5 predictions
-    _, indices = torch.topk(out, 5)
-    percentages = torch.nn.functional.softmax(out, dim=1)[0] * 100
-    predictions = [(class_names[idx], percentages[idx].item()) for idx in indices[0]]
+        # Get the top 5 predictions
+        _, indices = torch.topk(out, 5)
+        percentages = torch.nn.functional.softmax(out, dim=1)[0] * 100
+        predictions = [(class_names[idx], percentages[idx].item()) for idx in indices[0]]
 
     return [{'name': name, 'score': score / 100} for name, score in predictions]
 
@@ -160,7 +158,11 @@ def process_image_async(filepath, request_id):
 
 @app.route('/result/<request_id>', methods=['GET'])
 def get_result(request_id):
-    request_data = db.requests.find_one({'request_id': request_id})
+    try:
+        request_id = int(request_id)
+        request_data = db.requests.find_one({'request_id': request_id})
+    except ValueError:
+        return jsonify({'error': {'code': 404, 'message': 'ID not found'}}), 404
 
     if not request_data:
         return jsonify({'error': {'code': 404, 'message': 'ID not found'}}), 404
@@ -179,6 +181,8 @@ def get_result(request_id):
             'status': 'error',
             'error': request_data['error']
         }), 200  # CHECK: should it be 500?
+
+    print('This should not happen' + 'n'*100)
 
 
 @app.route('/status', methods=['GET'])
