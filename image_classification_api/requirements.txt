@@ -1,6 +1,7 @@
 Flask
 gunicorn
 pymongo
-torch
-torchvision
 Pillow
+
+# for testing
+requests

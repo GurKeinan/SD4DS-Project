@@ -1,1 +1,10 @@
-/.idea/
+/.idea
+/itamar_experiments/static/images
+/itamar_experiments/search_engine_key.csv
+/itamar_experiments/static/uploads
+
+# everything with __pycache__ in it
+**/__pycache__/*
+
+# .tar files, they might be heavy
+*.tar
