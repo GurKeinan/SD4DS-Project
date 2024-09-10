@@ -1,5 +1,5 @@
 import unittest
-from .base_test import BaseAPITest
+from .test_base import BaseAPITest
 import requests
 
 class TestUploadImage(BaseAPITest):
@@ -19,12 +19,12 @@ class TestUploadImage(BaseAPITest):
                     print(response.json())
                 self.assertEqual(response.status_code, 200)
 
-    def test_successful_upload_png(self):
+    def _test_successful_upload(self, true_filename='britney.png'):
         filenames = ["test_image.png", "somepic.png", "image with spaces.png", "image_with_ünîçødé.png"]
 
         for filename in filenames:
             with self.subTest(filename=filename):
-                with open(self.test_image_png, 'rb') as image_file:
+                with open(true_filename, 'rb') as image_file:
                     files = {'image': (filename, image_file, 'image/png')}
                     response = requests.post(self.endpoint, files=files)
 
@@ -41,6 +41,17 @@ class TestUploadImage(BaseAPITest):
                     self.assertIsInstance(match['score'], float)
                     self.assertGreater(match['score'], 0.0)
                     self.assertLessEqual(match['score'], 1.0)
+
+    def test_successful_uploads(self):
+        self._test_successful_upload(self.test_image_png)
+        self._test_successful_upload(self.test_image_jpeg)
+
+    def test_it_returns_400_when_no_file_is_uploaded(self):
+        response = requests.post(self.endpoint)
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.json(), {'error': {'code': 400, 'message': 'No file part'}})
+
+
 
 
 if __name__ == '__main__':

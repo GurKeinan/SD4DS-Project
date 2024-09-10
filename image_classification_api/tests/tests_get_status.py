@@ -1,7 +1,7 @@
 import unittest
 import requests
 import time
-from .base_test import BaseAPITest
+from .test_base import BaseAPITest
 
 
 class TestStatus(BaseAPITest):
