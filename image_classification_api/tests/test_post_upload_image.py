@@ -15,7 +15,6 @@ class TestPostUploadImage(BaseAPITest):
                 with open(file, 'rb') as f:
                     files = {'image': (file, f, MIME_type)}
                     response = requests.post(self.endpoint, files=files)
-                    print(response.json())
                 self.assertEqual(response.status_code, 200)
 
     def _test_successful_upload(self, true_filename='britney.png'):
@@ -51,6 +50,8 @@ class TestPostUploadImage(BaseAPITest):
         response = requests.post(self.endpoint)
         self.assertEqual(response.status_code, 400)
         self.assertEqual(response.json(), {'error': {'code': 400, 'message': 'No file part'}})
+        print('\n*10')
+        print(type(response.json()))
 
 
 
