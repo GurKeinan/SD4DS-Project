@@ -114,11 +114,13 @@ def async_upload():
         return jsonify({'error': {'code': 400, 'message': 'No selected file'}}), 400
 
     if file and allowed_file(file.filename):
-        filename = secure_filename(file.filename)
+
+        request_id = generate_unique_id()
+
+        filename = secure_filename(str(request_id))
         filepath = os.path.join('/tmp', filename)
         file.save(filepath)
 
-        request_id = generate_unique_id()
 
         # Save the request status as 'running'
         db.requests.insert_one({
