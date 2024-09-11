@@ -1,16 +1,19 @@
+import os
 import random
 import string
 from flask import render_template, redirect, url_for, flash, request, jsonify, session
 from flask_login import login_user, logout_user, current_user, login_required
 from flask import render_template, redirect, url_for, flash, request
 from flask_login import login_user, logout_user, login_required
+from werkzeug.utils import secure_filename
+
 from . import app, mongo, bcrypt, login_manager
 from .models import User
 from bson.objectid import ObjectId
 from datetime import datetime
 from app import app, mongo, bcrypt, login_manager, waiting_users_collection
 from app.models import User
-from .utils import fetch_photos_extended
+from .utils import fetch_photos_extended, save_image_from_url
 
 
 @login_manager.user_loader
@@ -250,3 +253,162 @@ def search_photos():
 
     # Return the URLs as a JSON response
     return jsonify({"photos": photo_urls})
+
+# Store user uploads in this directory
+UPLOAD_FOLDER = 'static/uploads/'
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+
+@app.route('/upload_image', methods=['POST'])
+@login_required
+def upload_image():
+    file = request.files.get('file')
+    selected_photo_url = request.form.get('selected-photo-url')
+
+    # Retrieve answers from form
+    correct_answer = request.form.get('correct-answer')
+    distraction1 = request.form.get('distraction1')
+    distraction2 = request.form.get('distraction2')
+
+    if not correct_answer or not distraction1 or not distraction2:
+        return jsonify({"status": "error", "message": "Please provide correct answer and distraction answers."})
+
+    # Handle file upload if a file is provided
+    if file:
+        filename = secure_filename(file.filename)
+        file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        file.save(file_path)
+
+        # Store the uploaded file path in the database
+        mongo.db.games.update_one(
+            {"_id": ObjectId(session['game_id'])},
+            {"$set": {f"player_images.{current_user.id}": file_path}}
+        )
+        print(f"user {current_user.id} uploaded file {file_path}")
+
+    # Handle selected photo URL
+    elif selected_photo_url:
+        # use save_image_from_url function to save the image locally and continue like with the uploaded file
+        #        uploaded_file.save(os.path.join(app.config['UPLOAD_FOLDER'], uploaded_file.filename))
+        save_image_from_url(selected_photo_url, os.path.join(app.config['UPLOAD_FOLDER'], f'{current_user.id}.jpg'))
+        # Store the selected photo URL in the database
+        mongo.db.games.update_one(
+            {"_id": ObjectId(session['game_id'])},
+            {"$set": {f"player_images.{current_user.id}": os.path.join(app.config['UPLOAD_FOLDER'], f'{current_user.id}.jpg')}}
+        )
+        print(f"user {current_user.id} uploaded file {selected_photo_url}")
+    else:
+        return jsonify({"status": "error", "message": "No file or image URL provided."})
+
+    # Store the answers in the database
+    mongo.db.games.update_one(
+        {"_id": ObjectId(session['game_id'])},
+        {"$set": {f"answers.{current_user.id}": {
+            "correct": correct_answer,
+            "distractions": [distraction1, distraction2]
+        }}}
+    )
+
+    # Check if both users have uploaded or selected images
+    game = mongo.db.games.find_one({"_id": ObjectId(session['game_id'])})
+    player_images = game.get("player_images", {})
+
+    if len(player_images) == 2:  # Both players have uploaded/selected images
+        print("Both players have uploaded/selected images.")
+        # use the merge_images function to merge the images
+        merged_image_url = merge_images(player_images)
+        #update the game document with the merged image URL
+        mongo.db.games.update_one(
+            {"_id": ObjectId(session['game_id'])},
+            {"$set": {"merged_image": merged_image_url}}
+        )
+        return jsonify({"status": "ready", "merged_image_url": merged_image_url})
+
+    return jsonify({"status": "waiting", "message": "Waiting for the other player to upload/select their image."})
+
+
+@app.route('/waiting-for-other')
+@login_required
+def waiting_for_other():
+    return render_template('waiting-for-other.html')
+
+
+@app.route('/check_merge_ready')
+@login_required
+def check_merge_ready():
+    game = mongo.db.games.find_one({"_id": ObjectId(session['game_id'])})
+    # check if the game document has the merged image URL
+    if game.get("merged_image"):
+        return jsonify({"status": "ready", "merged_image_url": game["merged_image"]})
+
+    return jsonify({"status": "waiting", "message": "Still waiting for the other player."})
+
+
+def merge_images(player_images):
+    # This is where your image-merging logic would go.
+    # Call the image processing microservice via API or merge them locally.
+    return 'path_to_merged_image'
+
+@app.route('/show_merged_image/<merged_image_url>')
+@login_required
+def show_merged_image(merged_image_url):
+    # Retrieve the current game document from the database
+    game = mongo.db.games.find_one({"_id": ObjectId(session['game_id'])})
+
+    # Determine the opponent's ID based on the player ID
+    if game['player1_id'] == current_user.id:
+        opponent_id = game['player2_id']
+    elif game['player2_id'] == current_user.id:
+        opponent_id = game['player1_id']
+    else:
+        return "Error: Current user is not part of this game.", 400
+
+    # Check if the opponent has submitted their answers
+    if 'answers' not in game or str(opponent_id) not in game['answers']:
+        return "Error: Opponent's answers not available.", 400
+
+    # Retrieve the correct answer and distractions
+    correct_answer = game['answers'][str(opponent_id)]["correct"]
+    distractions = game['answers'][str(opponent_id)]["distractions"]
+
+    # Shuffle the options for guessing
+    options = [correct_answer] + distractions
+    random.shuffle(options)
+
+    # Render the page with the merged image and options
+    return render_template('guess_image.html', image_url=merged_image_url, options=options)
+
+@app.route('/submit_guess', methods=['POST'])
+@login_required
+def submit_guess():
+    """
+    Handles the guess submission, checks if the guess is correct, and redirects the player with the result.
+    """
+    guess = request.form.get('guess')
+
+    # Retrieve game data
+    game = mongo.db.games.find_one({"_id": ObjectId(session['game_id'])})
+
+    if game['player1_id'] == current_user.id:
+        opponent_id = game['player2_id']
+    else:
+        opponent_id = game['player1_id']
+
+    # Get the correct answer (provided by the other player)
+    correct_answer = game['answers'][str(opponent_id)]['correct']
+
+    if guess == correct_answer:
+        flash('Congratulations! You guessed correctly!', 'success')
+        return redirect(url_for('game_result', result='win'))
+    else:
+        flash('Sorry, wrong guess. Better luck next time!', 'danger')
+        return redirect(url_for('game_result', result='lose'))
+
+
+@app.route('/game_result/<result>')
+@login_required
+def game_result(result):
+    """
+    Displays the result of the game (win/lose).
+    """
+    return render_template('game_result.html', result=result)
+
