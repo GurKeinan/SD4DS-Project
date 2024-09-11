@@ -1,3 +1,10 @@
+"""
+This module contains tests for the POST /async_upload endpoint, but
+only for the part of it that is independent of the functionality of the GET /result endpoint.
+"""
+
+
+
 import unittest
 from .test_base import BaseAPITest
 import requests

@@ -10,7 +10,7 @@ class BaseAPITest(unittest.TestCase):
         cls.test_image_png = 'tests/assets/britney.png'
         cls.test_image_jpeg = 'tests/assets/test_img.jpeg'
 
-        port = 5000
+        port = 5001
         cls.BASE_URL = f"http://localhost:{port}"
 
         # Check if the server is already running on the specified port

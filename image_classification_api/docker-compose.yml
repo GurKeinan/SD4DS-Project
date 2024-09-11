@@ -13,7 +13,9 @@ services:
     build: .
     container_name: image-classification-api
     ports:
-      - "5001:5000"
+      - "5001:5000"  # TODO: change to 6000 because Stav asked
+    volumes:
+      - .:/app
     depends_on:
       - mongo
 
