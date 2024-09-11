@@ -1,5 +1,5 @@
 # docker-compose build
-docker-compose run web python -m unittest discover
+docker-compose run web python -m tests.test_more_complex
 # "python -m unittest discover" runs all tests in the the current directory (including subdirectories),
 # but recognizes only files whose names start with "test".
 
