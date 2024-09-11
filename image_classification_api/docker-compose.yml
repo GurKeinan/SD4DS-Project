@@ -7,7 +7,7 @@ services:
     volumes:
       - mongo-data:/data/db
     ports:
-      - "27017:27017"
+      - "27017:27017"  # HOST:CONTAINER
 
   web:
     build: .
