@@ -13,7 +13,7 @@ from bson.objectid import ObjectId
 from datetime import datetime
 from app import app, mongo, bcrypt, login_manager, waiting_users_collection
 from app.models import User
-from .utils import fetch_photos_extended, save_image_from_url
+from .utils import fetch_photos_extended, save_image_from_url, merge_images
 
 
 @login_manager.user_loader
@@ -224,6 +224,7 @@ def enter_code():
     return render_template('enter_code.html')
 
 
+# TODO: I think it can be removed.
 @app.route('/game-ready')
 @login_required
 def game_ready():
@@ -253,10 +254,6 @@ def search_photos():
 
     # Return the URLs as a JSON response
     return jsonify({"photos": photo_urls})
-
-# Store user uploads in this directory
-UPLOAD_FOLDER = 'static/uploads/'
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 @app.route('/upload_image', methods=['POST'])
 @login_required
@@ -315,7 +312,11 @@ def upload_image():
     if len(player_images) == 2:  # Both players have uploaded/selected images
         print("Both players have uploaded/selected images.")
         # use the merge_images function to merge the images
-        merged_image_url = merge_images(player_images)
+        img1_path = player_images[str(game['player1_id'])]
+        img2_path = player_images[str(game['player2_id'])]
+        # output path - the combination of the ids plus random string
+        output_path = f"{game['player1_id']}_{game['player2_id']}_{generate_game_code(4)}.jpeg"
+        merged_image_url = merge_images(img1_path, img2_path, output_path)
         #update the game document with the merged image URL
         mongo.db.games.update_one(
             {"_id": ObjectId(session['game_id'])},
@@ -329,7 +330,7 @@ def upload_image():
 @app.route('/waiting-for-other')
 @login_required
 def waiting_for_other():
-    return render_template('waiting-for-other.html')
+    return render_template('waiting_for_other_player_to_upload_image.html')
 
 
 @app.route('/check_merge_ready')
@@ -342,11 +343,6 @@ def check_merge_ready():
 
     return jsonify({"status": "waiting", "message": "Still waiting for the other player."})
 
-
-def merge_images(player_images):
-    # This is where your image-merging logic would go.
-    # Call the image processing microservice via API or merge them locally.
-    return 'path_to_merged_image'
 
 @app.route('/show_merged_image/<merged_image_url>')
 @login_required
