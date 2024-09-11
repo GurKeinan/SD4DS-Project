@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Waiting for the Other Player</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css">
+</head>
+<body>
+    <div class="container mt-5">
+        <h1 class="text-center">Waiting for the Other Player...</h1>
+        <p class="lead text-center">You have successfully uploaded your image. Please wait while the other player uploads theirs.</p>
+
+        <div class="spinner-border text-primary" role="status">
+            <span class="sr-only">Loading...</span>
+        </div>
+
+        <div id="status" class="mt-3"></div>
+    </div>
+
+    <script>
+        // Function to check if the second player has uploaded their image
+        async function checkIfReady() {
+            const response = await fetch('/check_merge_ready');
+            const result = await response.json();
+            document.getElementById('status').innerHTML = result.message;
+
+            if (result.status === 'ready') {
+                window.location.href = '/show_merged_image/' + encodeURIComponent(result.merged_image_url);
+            }
+        }
+
+        // Poll the server every 5 seconds to check if the second player is ready
+        setInterval(checkIfReady, 5000);
+    </script>
+</body>
+</html>

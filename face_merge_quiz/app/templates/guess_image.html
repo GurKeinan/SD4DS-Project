@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Guess the Image</title>
+    <link
+        rel="stylesheet"
+        href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css"
+        integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh"
+        crossorigin="anonymous"
+    />
+</head>
+<body>
+    <div class="container mt-5">
+        <h1 class="text-center">Guess the Image</h1>
+        <p class="lead text-center">Here’s a merged image. Can you guess which name the other player chose?</p>
+
+        <!-- Display the merged image -->
+        <div class="text-center">
+            <img src="{{ image_url }}" alt="Merged Image" class="img-fluid mb-4" width="400">
+        </div>
+
+        <!-- Display the options for guessing -->
+        <form id="guessForm" method="POST" action="/submit_guess">
+            <div class="form-group text-center">
+                {% for option in options %}
+                <div class="form-check">
+                    <input class="form-check-input" type="radio" name="guess" id="option{{ loop.index }}" value="{{ option }}" required>
+                    <label class="form-check-label" for="option{{ loop.index }}">
+                        {{ option }}
+                    </label>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Submit the guess -->
+            <div class="text-center">
+                <button type="submit" class="btn btn-primary">Submit Guess</button>
+            </div>
+        </form>
+
+        <!-- Status or feedback message (optional) -->
+        <div id="statusMessage" class="mt-3 text-center"></div>
+    </div>
+
+    <script>
+        // You can add any client-side validation or interactivity here if needed
+    </script>
+</body>
+</html>
