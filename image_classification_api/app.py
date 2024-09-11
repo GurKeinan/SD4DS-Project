@@ -18,6 +18,8 @@ start_time = time.time()  # TODO: where should this be defined?
 model = models.resnet50(weights=ResNet50_Weights.IMAGENET1K_V1)
 model.eval()
 
+import multiprocessing
+
 # Load class labels from classes.txt
 imagenet_classes_path = os.path.join(os.path.dirname(__file__), 'imagenet-classes.txt')
 with open(imagenet_classes_path) as f:
@@ -33,9 +35,12 @@ preprocess = transforms.Compose([
 
 app = Flask(__name__)
 
+
+def get_db():
+    return MongoClient('mongodb://image-classification-db:27017/')['image_classification']
+
 # Set up MongoDB connection
-client = MongoClient(
-    'mongodb://image-classification-db:27017/')  # CHECK it is 27017 because it is like that in the docker-compose file?
+client = MongoClient('mongodb://image-classification-db:27017/')  # CHECK it is 27017 because it is like that in the docker-compose file?
 db = client['image_classification']
 
 # Define allowed extensions
@@ -114,11 +119,13 @@ def async_upload():
         return jsonify({'error': {'code': 400, 'message': 'No selected file'}}), 400
 
     if file and allowed_file(file.filename):
-        filename = secure_filename(file.filename)
+
+        request_id = generate_unique_id()
+
+        filename = secure_filename(str(request_id))
         filepath = os.path.join('/tmp', filename)
         file.save(filepath)
 
-        request_id = generate_unique_id()
 
         # Save the request status as 'running'
         db.requests.insert_one({
@@ -126,8 +133,11 @@ def async_upload():
             'status': 'running'
         })
 
-        # Start background processing
-        threading.Thread(target=process_image_async, args=(filepath, request_id)).start()
+        # # Start background processing
+        # threading.Thread(target=process_image_async, args=(filepath, request_id)).start()
+
+        process = multiprocessing.Process(target=process_image_async, args=(filepath, request_id))
+        process.start()
 
         return jsonify({'request_id': request_id}), 202
 
@@ -139,7 +149,7 @@ def process_image_async(filepath, request_id):
         matches = classify_image(filepath)
 
         # Update the request status as 'completed' and save the results
-        db.requests.update_one(
+        get_db().requests.update_one(
             {'request_id': request_id},
             {'$set': {
                 'status': 'completed',
@@ -147,7 +157,7 @@ def process_image_async(filepath, request_id):
             }}
         )
     except Exception as e:
-        db.requests.update_one(
+        get_db().requests.update_one(
             {'request_id': request_id},
             {'$set': {
                 'status': 'error',

@@ -24,8 +24,9 @@ class TestMoreComplex(BaseAPITest):
         """
         T = self.measure_time_for_single_inference_job()
         print(f"Time for single inference job: {T} seconds")
+        num_concurrent_jobs = 6
         request_ids = []
-        for i in range(1):
+        for i in range(num_concurrent_jobs):
             with open(self.test_image_png, 'rb') as f:
                 files = {'image': (self.test_image_png, f, 'image/png')}
                 response = requests.post(self.BASE_URL + '/async_upload', files=files)
@@ -41,7 +42,7 @@ class TestMoreComplex(BaseAPITest):
                 print(response.json())
         end_time = time.time()
         elapsed_time = end_time - start_time
-        print(f"Time for 6 concurrent inference jobs: {elapsed_time} seconds")
+        print(f"Time for {num_concurrent_jobs} concurrent inference jobs: {elapsed_time} seconds")
         self.assertLessEqual(elapsed_time, 1.1 * T)
 
     def measure_time_for_single_inference_job(self):
