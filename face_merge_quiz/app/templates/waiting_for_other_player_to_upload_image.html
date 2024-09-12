@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Waiting Room - Created Game</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Waiting for the Other Player</title>
     <link
         rel="stylesheet"
         href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css"
@@ -28,9 +28,6 @@
                 {% if user.is_authenticated %}
                 <a class="nav-item nav-link" id="join_game" href="/join-game">Join a Game</a>
                 <a class="nav-item nav-link" id="logout" href="/logout">Logout</a>
-                <span class="navbar-text ml-auto">
-                    Welcome, {{ user.username }}!
-                </span>
                 {% else %}
                 <a class="nav-item nav-link" id="login" href="/login">Login</a>
                 <a class="nav-item nav-link" id="signUp" href="/sign-up">Sign Up</a>
@@ -41,17 +38,16 @@
 
     <!-- Main Content -->
     <div class="container mt-5">
-        <div class="jumbotron">
-            <h2 class="display-4">Waiting Room</h2>
-            <p class="lead">
-                Waiting for another player to join the game. Your game code is:
-            </p>
-            <div class="alert alert-primary" role="alert">
-                <h3>{{ game_code }}</h3>
+        <div class="jumbotron text-center">
+            <h1 class="display-4">Waiting for the Other Player...</h1>
+            <p class="lead">You have successfully uploaded your image. Please wait while the other player uploads theirs.</p>
+
+            <!-- Loading Spinner -->
+            <div class="spinner-border text-primary" role="status">
+                <span class="sr-only">Loading...</span>
             </div>
-            <p>
-                You will be automatically redirected once another player joins.
-            </p>
+
+            <div id="status" class="mt-3"></div>
         </div>
     </div>
 
@@ -73,21 +69,19 @@
     ></script>
 
     <script>
-        function checkForGame() {
-            fetch('/check-game')
-                .then(response => response.json())
-                .then(data => {
-                    if (data.game_found) {
-                        window.location.href = "/game-ready";
-                    } else {
-                        setTimeout(checkForGame, 3000);  // Poll again after 3 seconds
-                    }
-                });
+        // Function to check if the second player has uploaded their image
+        async function checkIfReady() {
+            const response = await fetch('/check_merge_ready');
+            const result = await response.json();
+            document.getElementById('status').innerHTML = result.message;
+
+            if (result.status === 'ready') {
+                window.location.href = '/show_merged_image/' + encodeURIComponent(result.merged_image_url);
+            }
         }
 
-        document.addEventListener('DOMContentLoaded', function() {
-            setTimeout(checkForGame, 3000);  // Start polling after 3 seconds
-        });
+        // Poll the server every 5 seconds to check if the second player is ready
+        setInterval(checkIfReady, 5000);
     </script>
 </body>
 </html>
