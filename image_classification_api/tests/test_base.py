@@ -10,7 +10,7 @@ class BaseAPITest(unittest.TestCase):
         cls.test_image_png = 'tests/assets/britney.png'
         cls.test_image_jpeg = 'tests/assets/test_img.jpeg'
 
-        port = 6000  # If I am ot mistaken, the port here does not matter and does not have to coincide with any other port in the source code or the Dockerfile
+        port = 6000  # should equal to the port before the : in the docker-compose file
         cls.BASE_URL = f"http://localhost:{port}"
 
         # NEW FROM SEPTEMBER 12TH: Instead of starting the app from here, first run docker-compose up and then run the tests

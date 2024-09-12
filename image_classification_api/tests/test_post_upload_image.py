@@ -50,8 +50,6 @@ class TestPostUploadImage(BaseAPITest):
         response = requests.post(self.endpoint)
         self.assertEqual(response.status_code, 400)
         self.assertEqual(response.json(), {'error': {'code': 400, 'message': 'No file part'}})
-        print('\n*10')
-        print(type(response.json()))
 
 
 

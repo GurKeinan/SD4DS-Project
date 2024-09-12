@@ -18,7 +18,7 @@ start_time = time.time()  # TODO: where should this be defined?
 model = models.resnet50(weights=ResNet50_Weights.IMAGENET1K_V1)
 model.eval()
 
-import multiprocessing
+import threading
 
 # Load class labels from classes.txt
 imagenet_classes_path = os.path.join(os.path.dirname(__file__), 'imagenet-classes.txt')
@@ -133,11 +133,11 @@ def async_upload():
             'status': 'running'
         })
 
-        # # Start background processing
-        # threading.Thread(target=process_image_async, args=(filepath, request_id)).start()
+        # Start background processing
+        threading.Thread(target=process_image_async, args=(filepath, request_id)).start()
 
-        process = multiprocessing.Process(target=process_image_async, args=(filepath, request_id))
-        process.start()
+        # process = multiprocessing.Process(target=process_image_async, args=(filepath, request_id))
+        # process.start()
 
         return jsonify({'request_id': request_id}), 202
 

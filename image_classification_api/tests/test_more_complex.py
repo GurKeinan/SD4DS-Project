@@ -40,7 +40,6 @@ class TestMoreComplex(BaseAPITest):
                 response = requests.get(self.BASE_URL + f'/result/{request_id}')
                 if response.json()['status'] == 'completed':
                     break
-                print(response.json())
         end_time = time.time()
         elapsed_time = end_time - start_time
         print(f"Time for {num_concurrent_jobs} concurrent inference jobs: {elapsed_time} seconds")
@@ -66,7 +65,6 @@ class TestMoreComplex(BaseAPITest):
                 response = requests.get(self.BASE_URL + f'/result/{request_id}')
                 if response.json()['status'] == 'completed':
                     break
-                print(response.json())
             end_time = time.time()
             elapsed_time = end_time - start_time
             return elapsed_time
