@@ -2,12 +2,10 @@
 This file contains more complex tests for the API.
 """
 
-
 import unittest
 from .test_base import BaseAPITest
 import requests
 import time
-
 
 class TestMoreComplex(BaseAPITest):
 
@@ -24,6 +22,8 @@ class TestMoreComplex(BaseAPITest):
         """
         T = self.measure_time_for_single_inference_job()
         print(f"Time for single inference job: {T} seconds")
+        self.save_time_to_file(f"Time for single inference job: {T} seconds\n")
+
         num_concurrent_jobs = 6
         request_ids = []
         for i in range(num_concurrent_jobs):
@@ -33,6 +33,7 @@ class TestMoreComplex(BaseAPITest):
             # assert it was successful
             self.assertEqual(response.status_code, 202)
             request_ids.append(response.json()['request_id'])
+
         start_time = time.time()
         for request_id in request_ids:
             while True:
@@ -43,23 +44,49 @@ class TestMoreComplex(BaseAPITest):
         end_time = time.time()
         elapsed_time = end_time - start_time
         print(f"Time for {num_concurrent_jobs} concurrent inference jobs: {elapsed_time} seconds")
+        self.save_time_to_file(f"Time for {num_concurrent_jobs} concurrent inference jobs: {elapsed_time} seconds\n")
         self.assertLessEqual(elapsed_time, 1.1 * T)
 
-    def measure_time_for_single_inference_job(self):
-        start_time = time.time()
-        with open(self.test_image_png, 'rb') as f:
-            files = {'image': (self.test_image_png, f, 'image/png')}
-            response = requests.post(self.BASE_URL + '/upload_image', files=files)
-        # assert it was successful
-        self.assertEqual(response.status_code, 200)
-        print("In measure_time", response.json())
-        end_time = time.time()
-        elapsed_time = end_time - start_time
-        return elapsed_time
+    def test_stress_2(self):
+        self.test_stress()
 
+    def test_stress_3(self):
+        self.test_stress()
 
+    def measure_time_for_single_inference_job(self, async_upload=True):
+        if async_upload:
+            start_time = time.time()
+            with open(self.test_image_png, 'rb') as f:
+                files = {'image': (self.test_image_png, f, 'image/png')}
+                response = requests.post(self.BASE_URL + '/async_upload', files=files)
+            # assert it was successful
+            self.assertEqual(response.status_code, 202)
+            request_id = response.json()['request_id']
+            while True:
+                response = requests.get(self.BASE_URL + f'/result/{request_id}')
+                if response.json()['status'] == 'completed':
+                    break
+                print(response.json())
+            end_time = time.time()
+            elapsed_time = end_time - start_time
+            return elapsed_time
+
+        else:
+            start_time = time.time()
+            with open(self.test_image_png, 'rb') as f:
+                files = {'image': (self.test_image_png, f, 'image/png')}
+                response = requests.post(self.BASE_URL + '/upload_image', files=files)
+            # assert it was successful
+            self.assertEqual(response.status_code, 200)
+            print("In measure_time", response.json())
+            end_time = time.time()
+            elapsed_time = end_time - start_time
+            return elapsed_time
+
+    def save_time_to_file(self, log_message):
+        """Helper method to append measured times to a file"""
+        with open("measured_times.log", "a") as log_file:
+            log_file.write(log_message)
 
 if __name__ == '__main__':
     unittest.main()
-
-
