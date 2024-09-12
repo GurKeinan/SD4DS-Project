@@ -28,7 +28,7 @@ def load_user(user_id):
 def generate_game_code(length=6):
     """Generates a random game code."""
     letters_and_digits = string.ascii_uppercase + string.digits
-    return ''.join(random.choice(letters_and_digits) for i in range(length))
+    return ''.join(random.choice(letters_and_digits) for _ in range(length))
 
 
 @app.route('/')

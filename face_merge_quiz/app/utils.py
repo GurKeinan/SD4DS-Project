@@ -79,7 +79,7 @@ def save_image_from_url(url, file_name):
 
 
 def merge_images(image1_path, image2_path, output_path):
-    # Flip a coin to decide which image is target and which is source
+    # Flip a coin to decide which image is the target and which is the source
     coin_flip = random.choice([True, False])
     if coin_flip:
         target = image1_path
