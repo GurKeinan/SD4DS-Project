@@ -1,6 +1,6 @@
 import random
 import requests
-import os # use for getting environment variables
+import os  # use for getting environment variables
 from PIL import Image
 from flask import url_for
 from gradio_client import file
@@ -23,7 +23,6 @@ def fetch_photos(query, prefix='', suffix='', start_index=1):
         'searchType': 'image',
         'start': start_index,  # Starting index for pagination
         'num': 10,  # Number of results per page (up to 10)
-        'imgSize': 'large'  # CHECK Filter by image size
     }
 
     response = requests.get(SEARCH_URL, params=params)
@@ -32,11 +31,11 @@ def fetch_photos(query, prefix='', suffix='', start_index=1):
     links = [item['link'] for item in data.get('items', [])]
     alts = [item.get('title', '') for item in data.get('items', [])]
     photos_sizes = [(item['image']['height'], item['image']['width']) for item in data.get('items', [])]
-    # Print image URLs from the first page  CHECK more pages
+    # Print image URLs from the first page  TODO more pages?
     return links, alts, photos_sizes
 
 
-def fetch_photos_extended(query, amount=10, check_size=False, prefix='', suffix='portrait'):  # CHECK portrait of
+def fetch_photos_extended(query, amount=10, check_size=False, prefix='', suffix='portrait'):  # TODO portrait of?
     current_amount = 0
     start_index = 1
     photo_urls = []
@@ -63,6 +62,7 @@ def fetch_photos_extended(query, amount=10, check_size=False, prefix='', suffix=
     if current_amount < amount:
         print('Not enough photos found')
     return [{'url': photo_urls[i], 'alt': photos_alts[i]} for i in range(len(photo_urls))]
+
 
 def save_image_from_url(url, file_name):
     # Send a GET request to the URL
