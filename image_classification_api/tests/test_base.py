@@ -10,7 +10,7 @@ class BaseAPITest(unittest.TestCase):
         cls.test_image_png = 'tests/assets/britney.png'
         cls.test_image_jpeg = 'tests/assets/test_img.jpeg'
 
-        port = 5001
+        port = 6000  # If I am ot mistaken, the port here does not matter and does not have to coincide with any other port in the source code or the Dockerfile
         cls.BASE_URL = f"http://localhost:{port}"
 
         # Check if the server is already running on the specified port
