@@ -28,7 +28,7 @@ def load_user(user_id):
 def generate_game_code(length=6):
     """Generates a random game code."""
     letters_and_digits = string.ascii_uppercase + string.digits
-    return ''.join(random.choice(letters_and_digits) for i in range(length))
+    return ''.join(random.choice(letters_and_digits) for _ in range(length))
 
 
 @app.route('/')
@@ -190,6 +190,7 @@ def check_game():
             return jsonify({"game_found": True})
     return jsonify({"game_found": False})
 
+
 @app.route('/waiting-room-random-game')
 @login_required
 def waiting_room_random_game():
@@ -240,6 +241,7 @@ def game_ready():
 def load_image():
     return render_template('load_image.html')
 
+
 @app.route("/search_photos", methods=["POST"])
 def search_photos():
     data = request.get_json()
@@ -254,6 +256,7 @@ def search_photos():
 
     # Return the URLs as a JSON response
     return jsonify({"photos": photo_urls})
+
 
 @app.route('/upload_image', methods=['POST'])
 @login_required
@@ -290,7 +293,8 @@ def upload_image():
         # Store the selected photo URL in the database
         mongo.db.games.update_one(
             {"_id": ObjectId(session['game_id'])},
-            {"$set": {f"player_images.{current_user.id}": os.path.join(app.config['UPLOAD_FOLDER'], f'{current_user.id}.jpg')}}
+            {"$set": {f"player_images.{current_user.id}": os.path.join(app.config['UPLOAD_FOLDER'],
+                                                                       f'{current_user.id}.jpg')}}
         )
         print(f"user {current_user.id} uploaded file {selected_photo_url}")
     else:
@@ -317,7 +321,7 @@ def upload_image():
         # output path - the combination of the ids plus random string
         output_path = f"{game['player1_id']}_{game['player2_id']}_{generate_game_code(4)}.jpeg"
         merged_image_url = merge_images(img1_path, img2_path, output_path)
-        #update the game document with the merged image URL
+        #  update the game document with the merged image URL
         mongo.db.games.update_one(
             {"_id": ObjectId(session['game_id'])},
             {"$set": {"merged_image": merged_image_url}}
@@ -373,6 +377,7 @@ def show_merged_image(merged_image_url):
     # Render the page with the merged image and options
     return render_template('guess_image.html', image_url=merged_image_url, options=options)
 
+
 @app.route('/submit_guess', methods=['POST'])
 @login_required
 def submit_guess():
@@ -407,4 +412,3 @@ def game_result(result):
     Displays the result of the game (win/lose).
     """
     return render_template('game_result.html', result=result)
-
