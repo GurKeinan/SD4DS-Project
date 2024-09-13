@@ -9,3 +9,6 @@
 # .tar files, they might be heavy
 *.tar
 *.env
+
+*/static
+*.log
