@@ -5,7 +5,7 @@ from flask_login import LoginManager, current_user
 from gradio_client import Client
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'your_secret_key'
+app.config['SECRET_KEY'] = 'your_secret_key'  # TODO change this
 app.config['MONGO_URI'] = 'mongodb://face-merge-mongodb:27017/face_merge_db'
 app.config['UPLOAD_FOLDER'] = 'static/uploads/'
 app.config['OUTPUT_FOLDER'] = 'static/outputs/'

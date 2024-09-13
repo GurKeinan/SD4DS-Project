@@ -326,7 +326,7 @@ def upload_image():
             {"_id": ObjectId(session['game_id'])},
             {"$set": {"merged_image": merged_image_url}}
         )
-        return jsonify({"status": "ready", "merged_image_url": merged_image_url})
+        return jsonify({"status": "ready", "message": "Merged Photo is Ready", "merged_image_url": merged_image_url})
 
     return jsonify({"status": "waiting", "message": "Waiting for the other player to upload/select their image."})
 
