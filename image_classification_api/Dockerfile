@@ -11,6 +11,7 @@ COPY . .
 
 RUN python download_weights.py
 
-CMD ["gunicorn", "-w", "4", "-b", "0.0.0.0:5000", "app:app"]
-#CMD ["python", "-m", "tests.get_status"]
+# we set the environment variable GUNICORN_WORKERS in the docker-compose.yml file
+
+CMD gunicorn -w "$GUNICORN_WORKERS" -b 0.0.0.0:5000 app:app
 

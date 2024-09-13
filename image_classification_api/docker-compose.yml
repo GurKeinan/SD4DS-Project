@@ -1,23 +1,27 @@
-version: '3'
+  version: '3'
 
-services:
-  mongo:
-    image: mongo
-    container_name: image-classification-db
-    volumes:
-      - mongo-data:/data/db
-    ports:
-      - "27017:27017"  # HOST:CONTAINER
+  services:
+    mongo:
+      image: mongo
+      container_name: image-classification-db
+      volumes:
+        - mongo-data:/data/db  # this is a named volume
+      ports:
+        - "27017:27017"  # HOST:CONTAINER
 
-  web:
-    build: .
-    container_name: image-classification-api
-    ports:
-      - "5001:5000"  # TODO: change to 6000 because Stav asked
-    volumes:
-      - .:/app
-    depends_on:
-      - mongo
+    web:
+      build: .
+      container_name: image-classification-api
+      ports:
+        - "6000:5000"
+      volumes:
+        - .:/app
+      depends_on:
+        - mongo
+      environment:
+        - GUNICORN_WORKERS=7
+      env_file:
+        - .env
 
-volumes:
-  mongo-data:
+  volumes:
+    mongo-data:

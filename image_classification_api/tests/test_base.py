@@ -10,17 +10,20 @@ class BaseAPITest(unittest.TestCase):
         cls.test_image_png = 'tests/assets/britney.png'
         cls.test_image_jpeg = 'tests/assets/test_img.jpeg'
 
-        port = 5001
+        port = 6000  # should equal to the port before the : in the docker-compose file
         cls.BASE_URL = f"http://localhost:{port}"
 
-        # Check if the server is already running on the specified port
-        if not cls.is_server_running(port):
-            def run_flask():
-                app.app.run(host='0.0.0.0', port=port)
+        # NEW FROM SEPTEMBER 12TH: Instead of starting the app from here, first run docker-compose up and then run the tests
+        # (run the tests in your laptop, not in the container)
 
-            threading.Thread(target=run_flask, daemon=True).start()
-        else:
-            print(f"Server is already running on port {port} :)")
+        # # Check if the server is already running on the specified port
+        # if not cls.is_server_running(port):
+        #     def run_flask():
+        #         app.app.run(host='0.0.0.0', port=port)
+        #
+        #     threading.Thread(target=run_flask, daemon=True).start()
+        # else:
+        #     print(f"Server is already running on port {port} :)")
 
     @staticmethod
     def is_server_running(port):

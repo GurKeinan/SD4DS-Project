@@ -1,6 +1,6 @@
 import random
 import requests
-import os # use for getting environment variables
+import os  # use for getting environment variables
 from PIL import Image
 from flask import url_for
 from gradio_client import file
@@ -23,7 +23,6 @@ def fetch_photos(query, prefix='', suffix='', start_index=1):
         'searchType': 'image',
         'start': start_index,  # Starting index for pagination
         'num': 10,  # Number of results per page (up to 10)
-        'imgSize': 'large'  # CHECK Filter by image size
     }
 
     response = requests.get(SEARCH_URL, params=params)
@@ -32,11 +31,11 @@ def fetch_photos(query, prefix='', suffix='', start_index=1):
     links = [item['link'] for item in data.get('items', [])]
     alts = [item.get('title', '') for item in data.get('items', [])]
     photos_sizes = [(item['image']['height'], item['image']['width']) for item in data.get('items', [])]
-    # Print image URLs from the first page  CHECK more pages
+    # Print image URLs from the first page  TODO more pages?
     return links, alts, photos_sizes
 
 
-def fetch_photos_extended(query, amount=10, check_size=False, prefix='', suffix='portrait'):  # CHECK portrait of
+def fetch_photos_extended(query, amount=10, check_size=False, prefix='', suffix='portrait'):  # TODO portrait of?
     current_amount = 0
     start_index = 1
     photo_urls = []
@@ -64,6 +63,7 @@ def fetch_photos_extended(query, amount=10, check_size=False, prefix='', suffix=
         print('Not enough photos found')
     return [{'url': photo_urls[i], 'alt': photos_alts[i]} for i in range(len(photo_urls))]
 
+
 def save_image_from_url(url, file_name):
     # Send a GET request to the URL
     response = requests.get(url)
@@ -79,7 +79,7 @@ def save_image_from_url(url, file_name):
 
 
 def merge_images(image1_path, image2_path, output_path):
-    # Flip a coin to decide which image is target and which is source
+    # Flip a coin to decide which image is the target and which is the source
     coin_flip = random.choice([True, False])
     if coin_flip:
         target = image1_path
@@ -105,12 +105,12 @@ def merge_images(image1_path, image2_path, output_path):
     image = Image.open(temp_result_path)
 
     # Ensure the outputs folder exists
-    outputs_dir = os.path.join(app.config['OUTPUT_FOLDER'], 'outputs')
-    if not os.path.exists(outputs_dir):
-        os.makedirs(outputs_dir)
+    # outputs_dir = os.path.join(app.config['OUTPUT_FOLDER'], 'outputs')
+    # if not os.path.exists(outputs_dir):
+    #     os.makedirs(outputs_dir)
 
     # Save the image as .jpeg in the outputs folder
-    jpeg_save_path = os.path.join(outputs_dir, output_path)
+    jpeg_save_path = os.path.join(app.config['OUTPUT_FOLDER'], output_path)
     image.save(jpeg_save_path, "JPEG")
 
     print(f"Image saved as {jpeg_save_path}")

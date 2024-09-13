@@ -1,6 +1,7 @@
 import random
 import time
 
+import requests
 from flask import Flask, request, jsonify
 import os
 from werkzeug.utils import secure_filename
@@ -15,23 +16,11 @@ from torchvision.models import ResNet50_Weights
 start_time = time.time()  # TODO: where should this be defined?
 
 
-model = models.resnet50(weights=ResNet50_Weights.IMAGENET1K_V1)
-model.eval()
 
-import multiprocessing
 
-# Load class labels from classes.txt
-imagenet_classes_path = os.path.join(os.path.dirname(__file__), 'imagenet-classes.txt')
-with open(imagenet_classes_path) as f:
-    class_names = [line.strip() for line in f.readlines()]
+import threading
 
-# Define the image transformation pipeline
-preprocess = transforms.Compose([
-    transforms.Resize(256),
-    transforms.CenterCrop(224),
-    transforms.ToTensor(),
-    transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
-])
+
 
 app = Flask(__name__)
 
@@ -58,31 +47,96 @@ def generate_unique_id():
         if db.requests.find_one({'request_id': new_id}) is None:
             return new_id
 
-
+# def cpu_bound_simulation(n):
+#     a, b = 0, 1
+#     for _ in range(n):
+#         a, b = b, a + b
+#     print(f'Finished CPU-bound simulation with n={n}')
+#     return a
 # def classify_image(filepath):
+#     cpu_bound_simulation(1000000)
 #     # Dummy implementation, replace with actual model inference
 #     return [{'name': 'tomato', 'score': 0.9}, {'name': 'carrot', 'score': 0.02}]
 
-def classify_image(filepath):
-    with Image.open(filepath) as img:
-        # Convert PNG images (with an alpha channel) to RGB
-        if img.mode == 'RGBA':
-            img = img.convert('RGB')
+model = models.resnet50(weights=ResNet50_Weights.IMAGENET1K_V1)
+model.eval()
 
-        # Preprocess the image
-        img_t = preprocess(img)
-        batch_t = torch.unsqueeze(img_t, 0)
+# Load class labels from classes.txt
+imagenet_classes_path = os.path.join(os.path.dirname(__file__), 'imagenet-classes.txt')
+with open(imagenet_classes_path) as f:
+    class_names = [line.strip() for line in f.readlines()]
 
-        # Perform inference
-        with torch.no_grad():
-            out = model(batch_t)
+# Define the image transformation pipeline
+preprocess = transforms.Compose([
+    transforms.Resize(256),
+    transforms.CenterCrop(224),
+    transforms.ToTensor(),
+    transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+])
 
-        # Get the top 5 predictions
-        _, indices = torch.topk(out, 5)
-        percentages = torch.nn.functional.softmax(out, dim=1)[0] * 100
-        predictions = [(class_names[idx], percentages[idx].item()) for idx in indices[0]]
+# def classify_image(filepath):
+#     with Image.open(filepath) as img:
+#         # Convert PNG images (with an alpha channel) to RGB
+#         if img.mode == 'RGBA':
+#             img = img.convert('RGB')
+#
+#         # Preprocess the image
+#         img_t = preprocess(img)
+#         batch_t = torch.unsqueeze(img_t, 0)
+#
+#         # Perform inference
+#         with torch.no_grad():
+#             out = model(batch_t)
+#
+#         # Get the top 5 predictions
+#         _, indices = torch.topk(out, 5)
+#         percentages = torch.nn.functional.softmax(out, dim=1)[0] * 100
+#         predictions = [(class_names[idx], percentages[idx].item()) for idx in indices[0]]
+#
+#     return [{'name': name, 'score': score / 100} for name, score in predictions]
 
-    return [{'name': name, 'score': score / 100} for name, score in predictions]
+def classify_image(image_path):
+    """
+    Classifies an image using Hugging Face Inference API with a ViT model.
+
+    Returns:
+    - result (list): A list of dictionaries, each containing the classification label and its score.
+                     Example: [{'label': 'tomato', 'score': 0.9}, {'label': 'carrot', 'score': 0.02}]
+
+    Raises:
+    - Exception: If there is an error with the request or the classification fails.
+    """
+
+    # Hugging Face API URL for the image classification model
+    api_url = "https://api-inference.huggingface.co/models/google/vit-base-patch16-224"
+
+    # Prepare the request headers with the API token
+    headers = {
+        "Authorization": f"Bearer {os.environ['HF_API_TOKEN']}"
+    }
+
+    try:
+        # Open the image file in binary mode and read its content
+        with open(image_path, 'rb') as image_file:
+            image_data = image_file.read()
+
+        # Send the request to the Hugging Face API
+        response = requests.post(api_url, headers=headers, data=image_data)
+
+        # Check if the request was successful
+        if response.status_code == 200:
+            # Parse the JSON response
+            result = response.json()
+
+            # Return the classification results
+            return result
+        else:
+            # Raise an exception if the request failed
+            raise Exception(f"Error: {response.status_code} - {response.text}")
+
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        return None
 
 
 @app.route('/upload_image', methods=['POST'])
@@ -133,11 +187,11 @@ def async_upload():
             'status': 'running'
         })
 
-        # # Start background processing
-        # threading.Thread(target=process_image_async, args=(filepath, request_id)).start()
+        # Start background processing
+        threading.Thread(target=process_image_async, args=(filepath, request_id)).start()
 
-        process = multiprocessing.Process(target=process_image_async, args=(filepath, request_id))
-        process.start()
+        # process = multiprocessing.Process(target=process_image_async, args=(filepath, request_id))
+        # process.start()
 
         return jsonify({'request_id': request_id}), 202
 
@@ -215,4 +269,4 @@ def get_status():
 
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5001)
+    app.run(host='0.0.0.0', port=5000)

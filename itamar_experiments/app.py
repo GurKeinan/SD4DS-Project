@@ -2,6 +2,7 @@ from flask import Flask, render_template, request, jsonify
 import os
 import requests
 import csv
+import base64
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = 'static/uploads'  # Folder to save uploaded photos
@@ -22,6 +23,82 @@ with open(KEY_PATH, 'r') as file:
     # print(API_KEY)
 
 
+def fetch_photos(query, prefix='', suffix='', start_index=1):
+    q = query
+    if prefix:
+        q = prefix + ' ' + q
+    if suffix:
+        q = q + ' ' + suffix
+    params = {
+        'key': API_KEY,
+        'cx': CX,
+        'q': q,
+        'searchType': 'image',
+        'start': start_index,  # Starting index for pagination
+        'num': 10,  # Number of results per page (up to 10)
+        # 'imgSize': 'large'
+    }
+
+    response = requests.get(SEARCH_URL, params=params)
+
+    data = response.json()
+    links = [item['link'] for item in data.get('items', [])]
+    alts = [item.get('title', '') for item in data.get('items', [])]
+    photos_sizes = [(item['image']['height'], item['image']['width']) for item in data.get('items', [])]
+    # Print image URLs from the first page
+    return links, alts, photos_sizes
+
+
+def fetch_photos_extended(query, amount=10, check_size=False, prefix='', suffix='portrait'):
+    current_amount = 0
+    start_index = 1
+    photo_urls = []
+    photos_alts = []
+    # prev_len = 0
+    while current_amount < amount and start_index <= MAX_INDEX:
+        # print(start_index, current_amount)
+        links, alts, photos_sizes = fetch_photos(query, prefix, suffix, start_index)
+        if len(links) == 0:
+            print('No photos found in index', start_index)
+            break
+        for i in range(len(links)):
+            if current_amount >= amount:
+                break
+
+            if (photos_sizes[i][0] >= photos_sizes[i][1] or not check_size) and links[i] not in photo_urls:
+                photo_urls.append(links[i])
+                photos_alts.append(alts[i])
+                current_amount += 1
+        # if prev_len == current_amount or current_amount >= amount:
+        #     break
+        start_index += 1
+        # prev_len = current_amount
+    if current_amount < amount:
+        print('Not enough photos found')
+    return [{'url': photo_urls[i], 'alt': photos_alts[i]} for i in range(len(photo_urls))]
+
+
+def save_image_from_url(url, file_name):
+    # Send a GET request to the URL
+    response = requests.get(url)
+
+    # Check if the request was successful
+    if response.status_code == 200:
+        # Open a file in binary write mode and save the image
+        with open(file_name, 'wb') as image_file:
+            image_file.write(response.content)
+        print(f"Image successfully saved as {file_name}")
+    else:
+        print("Failed to retrieve the image.")
+
+
+@app.route("/")
+def index():
+    with open(r"static\uploads\im1ages.jpeg", "rb") as image_file:
+        # Encode the image to base64
+        encoded_image = base64.b64encode(image_file.read()).decode('utf-8')
+    return render_template("upload.html",
+                           photo_url='/static/uploads/im1ages.jpeg', image_data=encoded_image)
 
 
 # Route to search for photos by text
@@ -60,7 +137,6 @@ def handle_form_submission():
 
     selected_photo_url = request.form.get('selected-photo-url', '')
     if selected_photo_url:
-        # CHECK save with a name - player i photo
         # TODO we can take the text that was search in order to extract the name of the person
         save_image_from_url(selected_photo_url, os.path.join(app.config['UPLOAD_FOLDER'], 'selected_photo.jpg'))
         return f"Selected predefined photo: {selected_photo_url}"
