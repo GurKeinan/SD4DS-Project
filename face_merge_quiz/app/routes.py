@@ -1,19 +1,31 @@
+import json
 import os
 import random
 import string
+from io import BytesIO
+
+from PIL import Image
 from flask import render_template, redirect, url_for, flash, request, jsonify, session
 from flask_login import login_user, logout_user, current_user, login_required
 from flask import render_template, redirect, url_for, flash, request
 from flask_login import login_user, logout_user, login_required
 from werkzeug.utils import secure_filename
 
-from . import app, mongo, bcrypt, login_manager
+from . import app, mongo, bcrypt, login_manager, face_swap_client
 from .models import User
 from bson.objectid import ObjectId
 from datetime import datetime
 from app import app, mongo, bcrypt, login_manager, waiting_users_collection
 from app.models import User
 from .utils import fetch_photos_extended, save_image_from_url, merge_images
+from gradio_client import file as gradio_file
+
+import base64
+
+import logging
+
+# Set up basic logging
+logging.basicConfig(level=logging.INFO)
 
 
 @login_manager.user_loader
@@ -33,6 +45,7 @@ def generate_game_code(length=6):
 
 @app.route('/')
 def home():
+    logging.info("home endpoint hit")
     return render_template('index.html')
 
 
@@ -258,6 +271,12 @@ def search_photos():
     return jsonify({"photos": photo_urls})
 
 
+def save_base64_image(base64_string, filename):
+    image_data = base64.b64decode(base64_string)
+    with open(filename, "wb") as file:
+        file.write(image_data)
+
+
 @app.route('/upload_image', methods=['POST'])
 @login_required
 def upload_image():
@@ -275,15 +294,14 @@ def upload_image():
     # Handle file upload if a file is provided
     if file:
         filename = secure_filename(file.filename)
-        file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-        file.save(file_path)
-
-        # Store the uploaded file path in the database
+        # save the file to the db, and not to the file system, using base64 encoding
+        file_data = base64.b64encode(file.read()).decode('utf-8')
         mongo.db.games.update_one(
             {"_id": ObjectId(session['game_id'])},
-            {"$set": {f"player_images.{current_user.id}": file_path}}
+            {"$set": {f"player_images.{current_user.id}": file_data}}
         )
-        print(f"user {current_user.id} uploaded file {file_path}")
+
+        logging.info(f"user {current_user.id} uploaded file using base64 encoding")
 
     # Handle selected photo URL
     elif selected_photo_url:
@@ -311,21 +329,35 @@ def upload_image():
 
     # Check if both users have uploaded or selected images
     game = mongo.db.games.find_one({"_id": ObjectId(session['game_id'])})
+    logging.info(f"{game['player_images'].keys()=}")
     player_images = game.get("player_images", {})
 
     if len(player_images) == 2:  # Both players have uploaded/selected images
-        print("Both players have uploaded/selected images.")
-        # use the merge_images function to merge the images
-        img1_path = player_images[str(game['player1_id'])]
-        img2_path = player_images[str(game['player2_id'])]
-        # output path - the combination of the ids plus random string
-        output_path = f"{game['player1_id']}_{game['player2_id']}_{generate_game_code(4)}.jpeg"
-        merged_image_url = merge_images(img1_path, img2_path, output_path)
-        #  update the game document with the merged image URL
-        mongo.db.games.update_one(
-            {"_id": ObjectId(session['game_id'])},
-            {"$set": {"merged_image": merged_image_url}}
-        )
+        logging.info("Both players have uploaded/selected images.")
+        player1_image_data = player_images.get(str(game['player1_id']))
+        player2_image_data = player_images.get(str(game['player2_id']))
+
+        # Save the images to the file system
+        player1_image_file = os.path.join(app.config['UPLOAD_FOLDER'], f'{game["player1_id"]}.jpg')
+        player2_image_file = os.path.join(app.config['UPLOAD_FOLDER'], f'{game["player2_id"]}.jpg')
+
+        save_base64_image(player1_image_data, player1_image_file)
+        save_base64_image(player2_image_data, player2_image_file)
+
+        logging.info(f"player1_image_file={player1_image_file}")
+        logging.info(f"player2_image_file={player2_image_file}")
+
+        # Send the two images to the Gradio client for merging
+        merged_filename = f'{game["_id"]}.jpg'
+        merged_image_url = merge_images(player1_image_file, player2_image_file, merged_filename)
+
+        # save the merged image to the db, and not to the file system, using base64 encoding
+        with open(os.path.join(app.config['OUTPUT_FOLDER'], merged_filename), 'rb') as file:
+            merged_image_data = base64.b64encode(file.read()).decode('utf-8')
+            mongo.db.games.update_one(
+                {"_id": ObjectId(session['game_id'])},
+                {"$set": {"merged_image": merged_image_data}}
+            )
         print(f"Images merged successfully. Merged image URL: {merged_image_url[1:]}")
         return jsonify({"status": "ready", "message": "Merged Photo is Ready", "merged_image_url": merged_image_url[1:]})
 

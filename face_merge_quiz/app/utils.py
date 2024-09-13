@@ -3,8 +3,10 @@ import requests
 import os  # use for getting environment variables
 from PIL import Image
 from flask import url_for
-from gradio_client import file
+from gradio_client import handle_file
 from . import face_swap_client, app
+import base64
+
 
 MAX_INDEX = 1
 SEARCH_URL = 'https://www.googleapis.com/customsearch/v1'
@@ -90,8 +92,8 @@ def merge_images(image1_path, image2_path, output_path):
 
     # Perform the face swap
     result = face_swap_client.predict(
-        target=file(target),
-        source=file(source),
+        target=handle_file(target),
+        source=handle_file(source),
         slider=100,
         adv_slider=100,
         settings=["Adversarial Defense"],
