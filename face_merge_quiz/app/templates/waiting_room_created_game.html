@@ -73,11 +73,15 @@
     ></script>
 
     <script>
+        let isWellBehavedNavigation = false; // Flag to detect well-behaved navigation
+
+        // Function to check for game readiness
         function checkForGame() {
-            fetch('/check-game')
+            fetch(`/check-created-game?game_code={{ game_code }}`)
                 .then(response => response.json())
                 .then(data => {
                     if (data.game_found) {
+                        isWellBehavedNavigation = true; // Set flag to true when navigating to game
                         window.location.href = "/game-ready";
                     } else {
                         setTimeout(checkForGame, 3000);  // Poll again after 3 seconds
@@ -87,6 +91,14 @@
 
         document.addEventListener('DOMContentLoaded', function() {
             setTimeout(checkForGame, 3000);  // Start polling after 3 seconds
+        });
+
+        // Handle user leaving the waiting room
+        window.addEventListener('beforeunload', function(event) {
+            if (!isWellBehavedNavigation) {
+                // Use sendBeacon to call the leave-created-game-waiting-room route and delete the game
+                navigator.sendBeacon('/leave-created-game-waiting-room');
+            }
         });
     </script>
 </body>
