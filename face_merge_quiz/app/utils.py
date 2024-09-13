@@ -105,12 +105,12 @@ def merge_images(image1_path, image2_path, output_path):
     image = Image.open(temp_result_path)
 
     # Ensure the outputs folder exists
-    outputs_dir = os.path.join(app.config['OUTPUT_FOLDER'], 'outputs')
-    if not os.path.exists(outputs_dir):
-        os.makedirs(outputs_dir)
+    # outputs_dir = os.path.join(app.config['OUTPUT_FOLDER'], 'outputs')
+    # if not os.path.exists(outputs_dir):
+    #     os.makedirs(outputs_dir)
 
     # Save the image as .jpeg in the outputs folder
-    jpeg_save_path = os.path.join(outputs_dir, output_path)
+    jpeg_save_path = os.path.join(app.config['OUTPUT_FOLDER'], output_path)
     image.save(jpeg_save_path, "JPEG")
 
     print(f"Image saved as {jpeg_save_path}")
