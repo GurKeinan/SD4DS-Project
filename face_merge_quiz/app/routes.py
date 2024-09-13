@@ -130,6 +130,40 @@ def waiting_room_created_game():
     game_code = request.args.get('game_code')
     return render_template('waiting_room_created_game.html', game_code=game_code)
 
+@app.route('/check-created-game')
+@login_required
+def check_created_game():
+    # search for a game in which this player is the first player
+    game_code = request.args.get('game_code')
+    print(f'Checking for game with code {game_code}')
+    game_id = mongo.db.games.find_one({"player1_id": current_user.id, "status": "ready",
+                                       "game_code": game_code})
+    if game_id:
+        session['game_id'] = str(game_id['_id'])
+        # delete this user from the waiting users collection
+        waiting_users_collection.delete_one({"user_id": current_user.id})
+        print(f'The size of the waiting users collection is \
+              {waiting_users_collection.count_documents({})}')
+        return jsonify({"game_found": True})
+ 
+    return jsonify({"game_found": False})
+
+@app.route('/leave-created-game-waiting-room', methods=['POST'])
+@login_required
+def leave_created_game_waiting_room():
+    # Retrieve the game created by the current user
+    game_id = session.get('game_id')
+    if game_id:
+        game = mongo.db.games.find_one({"_id": ObjectId(game_id), "player1_id": current_user.id, "player2_id": None})
+
+        if game:
+            # Delete the game if no second player has joined
+            mongo.db.games.delete_one({"_id": game["_id"]})
+            session.pop('game_id', None)
+            return jsonify({"message": "Game deleted successfully"}), 200
+
+    return jsonify({"message": "Game not found or already joined by another player"}), 404
+
 
 @app.route('/join-random-game')
 @login_required
@@ -183,9 +217,9 @@ def join_random_game():
     flash('Waiting for another player to join...')
     return redirect(url_for('waiting_room_random_game'))
 
-@app.route('/leave-waiting-room', methods=['POST'])
+@app.route('/leave-random-waiting-room', methods=['POST'])
 @login_required
-def leave_waiting_room():
+def leave_random_waiting_room():
     # Retrieve the current user's waiting record
     waiting_user = waiting_users_collection.find_one({"user_id": current_user.id})
     print(f'User {current_user.id} is trying to leave the waiting room.')
@@ -203,9 +237,9 @@ def leave_waiting_room():
     return jsonify({"message": "User not found in waiting room or no game to delete"}), 404
 
 
-@app.route('/check-game')
+@app.route('/check-random-game')
 @login_required
-def check_game():
+def check_random_game():
     # search for a game in which this player is the first player
     game_id = mongo.db.games.find_one({"player1_id": current_user.id, "status": "ready"})
     if game_id:
