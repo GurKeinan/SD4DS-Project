@@ -6,6 +6,7 @@ import unittest
 from .test_base import BaseAPITest
 import requests
 import time
+import multiprocessing
 
 class TestMoreComplex(BaseAPITest):
 
@@ -25,21 +26,15 @@ class TestMoreComplex(BaseAPITest):
         self.save_time_to_file(f"Time for single inference job: {T} seconds\n")
 
         num_concurrent_jobs = 6
-        request_ids = []
+        # use multiprocessing to run multiple inference jobs concurrently
+        processes = []
         for i in range(num_concurrent_jobs):
-            with open(self.test_image_png, 'rb') as f:
-                files = {'image': (self.test_image_png, f, 'image/png')}
-                response = requests.post(self.BASE_URL + '/async_upload', files=files)
-            # assert it was successful
-            self.assertEqual(response.status_code, 202)
-            request_ids.append(response.json()['request_id'])
-
+            process = multiprocessing.Process(target=self.measure_time_for_single_inference_job)
+            processes.append(process)
+            process.start()
         start_time = time.time()
-        for request_id in request_ids:
-            while True:
-                response = requests.get(self.BASE_URL + f'/result/{request_id}')
-                if response.json()['status'] == 'completed':
-                    break
+        for process in processes:
+            process.join()
         end_time = time.time()
         elapsed_time = end_time - start_time
         print(f"Time for {num_concurrent_jobs} concurrent inference jobs: {elapsed_time} seconds")
@@ -67,6 +62,7 @@ class TestMoreComplex(BaseAPITest):
                     break
             end_time = time.time()
             elapsed_time = end_time - start_time
+            print("It took", elapsed_time, "seconds for the request to complete")
             return elapsed_time
 
         else:
