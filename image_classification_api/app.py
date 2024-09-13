@@ -15,23 +15,11 @@ from torchvision.models import ResNet50_Weights
 start_time = time.time()  # TODO: where should this be defined?
 
 
-model = models.resnet50(weights=ResNet50_Weights.IMAGENET1K_V1)
-model.eval()
+
 
 import threading
 
-# Load class labels from classes.txt
-imagenet_classes_path = os.path.join(os.path.dirname(__file__), 'imagenet-classes.txt')
-with open(imagenet_classes_path) as f:
-    class_names = [line.strip() for line in f.readlines()]
 
-# Define the image transformation pipeline
-preprocess = transforms.Compose([
-    transforms.Resize(256),
-    transforms.CenterCrop(224),
-    transforms.ToTensor(),
-    transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
-])
 
 app = Flask(__name__)
 
@@ -58,10 +46,32 @@ def generate_unique_id():
         if db.requests.find_one({'request_id': new_id}) is None:
             return new_id
 
-
+# def cpu_bound_simulation(n):
+#     a, b = 0, 1
+#     for _ in range(n):
+#         a, b = b, a + b
+#     print(f'Finished CPU-bound simulation with n={n}')
+#     return a
 # def classify_image(filepath):
+#     cpu_bound_simulation(1000000)
 #     # Dummy implementation, replace with actual model inference
 #     return [{'name': 'tomato', 'score': 0.9}, {'name': 'carrot', 'score': 0.02}]
+
+model = models.resnet50(weights=ResNet50_Weights.IMAGENET1K_V1)
+model.eval()
+
+# Load class labels from classes.txt
+imagenet_classes_path = os.path.join(os.path.dirname(__file__), 'imagenet-classes.txt')
+with open(imagenet_classes_path) as f:
+    class_names = [line.strip() for line in f.readlines()]
+
+# Define the image transformation pipeline
+preprocess = transforms.Compose([
+    transforms.Resize(256),
+    transforms.CenterCrop(224),
+    transforms.ToTensor(),
+    transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+])
 
 def classify_image(filepath):
     with Image.open(filepath) as img:
