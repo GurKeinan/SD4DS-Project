@@ -9,3 +9,5 @@
 # .tar files, they might be heavy
 *.tar
 *.env
+/face_merge_quiz/static/uploads
+/face_merge_quiz/static/outputs
