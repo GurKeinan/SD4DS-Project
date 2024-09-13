@@ -19,7 +19,9 @@
       depends_on:
         - mongo
       environment:
-        - GUNICORN_WORKERS=12
+        - GUNICORN_WORKERS=7
+      env_file:
+        - .env
 
   volumes:
     mongo-data:
