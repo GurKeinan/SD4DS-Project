@@ -82,7 +82,7 @@
 
         // Function to check for game readiness
         function checkForGame() {
-            fetch(`/check-random-game`)
+            fetch('/check-random-game')
                 .then(response => response.json())
                 .then(data => {
                     if (data.game_found) {
@@ -99,11 +99,29 @@
             setTimeout(checkForGame, 3000);
         });
 
-        // Handle user leaving the waiting room
+        // Function to attempt leaving the waiting room using sendBeacon or fetch
+        function leaveWaitingRoom() {
+            if (navigator.sendBeacon) {
+                const success = navigator.sendBeacon('/leave-random-waiting-room');
+                if (!success) {
+                    fetch('/leave-random-waiting-room', { method: 'POST' });
+                }
+            } else {
+                fetch('/leave-random-waiting-room', { method: 'POST' });
+            }
+        }
+
+        // Handle user leaving the waiting room with `beforeunload` event
         window.addEventListener('beforeunload', function(event) {
             if (!isWellBehavedNavigation) {
-                // Use sendBeacon to delete user and game if they are leaving the page unexpectedly
-                navigator.sendBeacon('/leave-random-waiting-room');
+                leaveWaitingRoom();
+            }
+        });
+
+        // Handle visibility change (useful for mobile devices)
+        document.addEventListener('visibilitychange', function() {
+            if (document.hidden && !isWellBehavedNavigation) {
+                leaveWaitingRoom();
             }
         });
     </script>

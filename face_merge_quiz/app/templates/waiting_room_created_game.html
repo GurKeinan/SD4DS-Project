@@ -93,11 +93,29 @@
             setTimeout(checkForGame, 3000);  // Start polling after 3 seconds
         });
 
-        // Handle user leaving the waiting room
+        // Function to attempt leaving the waiting room using sendBeacon or fetch
+        function leaveWaitingRoom() {
+            if (navigator.sendBeacon) {
+                const success = navigator.sendBeacon('/leave-created-game-waiting-room');
+                if (!success) {
+                    fetch('/leave-created-game-waiting-room', { method: 'POST' });
+                }
+            } else {
+                fetch('/leave-created-game-waiting-room', { method: 'POST' });
+            }
+        }
+
+        // Handle user leaving the waiting room with `beforeunload` event
         window.addEventListener('beforeunload', function(event) {
             if (!isWellBehavedNavigation) {
-                // Use sendBeacon to call the leave-created-game-waiting-room route and delete the game
-                navigator.sendBeacon('/leave-created-game-waiting-room');
+                leaveWaitingRoom();
+            }
+        });
+
+        // Handle visibility change (useful for mobile devices)
+        document.addEventListener('visibilitychange', function() {
+            if (document.hidden && !isWellBehavedNavigation) {
+                leaveWaitingRoom();
             }
         });
     </script>

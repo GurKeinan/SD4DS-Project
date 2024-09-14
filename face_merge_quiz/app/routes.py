@@ -49,8 +49,12 @@ def generate_game_code(length=6):
 
 
 @app.route('/')
+@login_required
 def home():
-    logging.info("home endpoint hit")
+    print(f'user {current_user.id} is in the home page')
+    print(f'There are {waiting_users_collection.count_documents({})} users in the waiting room.')
+    print(f'there are {mongo.db.games.count_documents({})} games in the database')
+    print()
     return render_template('index.html')
 
 
@@ -120,7 +124,7 @@ def join_game():
 def start_game():
     print(f'User {current_user.id} is trying to start a game.')
     # if there is a game created by the user in the database, delete it
-    game = mongo.db.games.find_one({"player1_id": current_user.id, "status": "waiting"})
+    game = mongo.db.games.find_one({"player1_id": current_user.id})
     if game:
         mongo.db.games.delete_one({"_id": game["_id"]})
     # Generate a unique game code
@@ -170,6 +174,8 @@ def check_created_game():
 @app.route('/leave-created-game-waiting-room', methods=['POST'])
 @login_required
 def leave_created_game_waiting_room():
+    print(f'User {current_user.id} is trying to leave the waiting room for a created game.')
+    
     # Retrieve the game created by the current user
     game_id = session.get('game_id')
     if game_id:
@@ -190,8 +196,13 @@ def join_random_game():
 
     # If this user already has a record in the waiting users collection, remove it
     waiting_users_collection.delete_one({"user_id": current_user.id})
+    # if this user was in any previous game, delete the game
+    game = mongo.db.games.find_one({"players": {"$in": [current_user.id]}, "status": "waiting"})
+    if game:
+        mongo.db.games.delete_one({"_id": game["_id"]})
     # Add the current user to the "waiting for a partner" database
-    waiting_users_collection.insert_one({"user_id": current_user.id, "timestamp": datetime.now(timezone.utc)})
+    waiting_users_collection.insert_one({"user_id": current_user.id,
+                                         "timestamp": datetime.now(timezone.utc)})
 
     print(f'User {current_user.id} added to the waiting room.')
 
