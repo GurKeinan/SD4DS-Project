@@ -41,9 +41,9 @@ class TestPostUploadImage(BaseAPITest):
                     self.assertLessEqual(match['score'], 1.0)
 
     def test_successful_uploads(self):
-        self._test_successful_upload(self.test_image_png)
-        self._test_successful_upload(self.test_image_jpeg)
-
+        for true_file_path in [self.test_image_png, self.test_image_jpeg]:
+            with self.subTest(true_file_path=true_file_path):
+                self._test_successful_upload(true_file_path)
 
 
     def test_it_returns_400_when_no_file_is_uploaded(self):
