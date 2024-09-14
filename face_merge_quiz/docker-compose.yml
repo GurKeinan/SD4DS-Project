@@ -10,6 +10,7 @@ services:
       - mongodb
     volumes:
       - ./app:/app/app  # Maps the app directory to the container's working directory
+      # TODO: delete the above line before submitting
     env_file:
       - .env
 
