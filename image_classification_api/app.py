@@ -1,3 +1,5 @@
+import logging
+logging.basicConfig(level=logging.INFO)
 import random
 import time
 
@@ -127,6 +129,9 @@ def classify_image(image_path):
         if response.status_code == 200:
             # Parse the JSON response
             result = response.json()
+            # this API returns a list of dictionaries, with 'label' and 'score' keys, while we need 'name' and 'score':
+            for match in result:
+                match['name'] = match.pop('label')
 
             # Return the classification results
             return result
