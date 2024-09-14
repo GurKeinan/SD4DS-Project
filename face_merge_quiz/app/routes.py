@@ -50,7 +50,6 @@ def generate_game_code(length=6):
 
 @app.route('/')
 def home():
-    logging.info("home endpoint hit")
     return render_template('index.html')
 
 
