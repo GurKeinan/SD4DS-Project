@@ -3,7 +3,7 @@ from flask_pymongo import PyMongo
 from flask_bcrypt import Bcrypt
 from flask_login import LoginManager, current_user
 from gradio_client import Client
-
+import httpx  # Import httpx
 import os
 
 app = Flask(__name__)
@@ -21,8 +21,14 @@ bcrypt = Bcrypt(app)
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'
 
-# Initialize the face-swap Client once
-face_swap_client = Client("felixrosberg/face-swap")
+# Set the timeout for HTTP requests using httpx.Timeout
+timeout = httpx.Timeout(120)  # Total timeout in seconds
+
+# Initialize the face-swap Client with the timeout
+face_swap_client = Client(
+    "felixrosberg/face-swap",
+    httpx_kwargs={"timeout": timeout}
+)
 
 waiting_users_collection = mongo.db.waiting_users  # New collection for waiting users
 
