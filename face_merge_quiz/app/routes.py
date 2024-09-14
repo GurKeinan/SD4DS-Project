@@ -1,12 +1,14 @@
 import json
 import os
 import random
+import re
 import string
 from io import BytesIO
 
 from PIL import Image
 from flask import render_template, redirect, url_for, flash, request, jsonify, session
 from flask_login import login_user, logout_user, current_user, login_required
+import requests
 from werkzeug.utils import secure_filename
 from datetime import timezone
 
@@ -68,7 +70,6 @@ def sign_up():
             "username": username,
             "password": hashed_password,
             "wins": 0,
-            "wins": 0,  # TODO tie? or maybe just success?
             "losses": 0
         }).inserted_id
 
@@ -118,6 +119,10 @@ def join_game():
 @login_required
 def start_game():
     print(f'User {current_user.id} is trying to start a game.')
+    # if there is a game created by the user in the database, delete it
+    game = mongo.db.games.find_one({"player1_id": current_user.id, "status": "waiting"})
+    if game:
+        mongo.db.games.delete_one({"_id": game["_id"]})
     # Generate a unique game code
     game_code = generate_game_code()
 
@@ -349,10 +354,11 @@ def search_photos():
 
 
 def save_base64_image(base64_string, filename):
-    image_data = base64.b64decode(base64_string)
+    cleaned_string = re.sub(r'\s+', '', base64_string)
+    padded_base64_string = cleaned_string + "=" * ((4 - len(cleaned_string) % 4) % 4)
+    image_data = base64.b64decode(padded_base64_string)
     with open(filename, "wb") as file:
         file.write(image_data)
-
 
 @app.route('/upload_image', methods=['POST'])
 @login_required
@@ -366,32 +372,36 @@ def upload_image():
     distraction2 = request.form.get('distraction2')
 
     if not correct_answer or not distraction1 or not distraction2:
-        return jsonify({"status": "error", "message": "Please provide correct answer and distraction answers."})
+        return jsonify({"status": "error",
+                        "message": "Please provide correct answer and distraction answers."})
 
     # Handle file upload if a file is provided
     if file:
-        filename = secure_filename(file.filename)
-        # save the file to the db, and not to the file system, using base64 encoding
         file_data = base64.b64encode(file.read()).decode('utf-8')
         mongo.db.games.update_one(
             {"_id": ObjectId(session['game_id'])},
             {"$set": {f"player_images.{current_user.id}": file_data}}
         )
-
         logging.info(f"user {current_user.id} uploaded file using base64 encoding")
 
     # Handle selected photo URL
     elif selected_photo_url:
-        # use save_image_from_url function to save the image locally and continue like with the uploaded file
-        #        uploaded_file.save(os.path.join(app.config['UPLOAD_FOLDER'], uploaded_file.filename))
-        save_image_from_url(selected_photo_url, os.path.join(app.config['UPLOAD_FOLDER'], f'{current_user.id}.jpg'))
-        # Store the selected photo URL in the database
-        mongo.db.games.update_one(
-            {"_id": ObjectId(session['game_id'])},
-            {"$set": {f"player_images.{current_user.id}": os.path.join(app.config['UPLOAD_FOLDER'],
-                                                                       f'{current_user.id}.jpg')}}
-        )
-        print(f"user {current_user.id} uploaded file {selected_photo_url}")
+        # Download the image and read it into bytes
+        response = requests.get(selected_photo_url, timeout=10)
+        if response.status_code == 200:
+            image_bytes = response.content
+            # Optionally save the image to the file system if needed
+            with open(os.path.join(app.config['UPLOAD_FOLDER'], f'{current_user.id}.jpg'), 'wb') as f:
+                f.write(image_bytes)
+            # Store the image data in base64 in the database
+            file_data = base64.b64encode(image_bytes).decode('utf-8')
+            mongo.db.games.update_one(
+                {"_id": ObjectId(session['game_id'])},
+                {"$set": {f"player_images.{current_user.id}": file_data}}
+            )
+            logging.info(f"user {current_user.id} selected an image from URL and it's stored in base64")
+        else:
+            return jsonify({"status": "error", "message": "Failed to download image from URL."})
     else:
         return jsonify({"status": "error", "message": "No file or image URL provided."})
 
@@ -420,20 +430,18 @@ def upload_image():
         save_base64_image(player1_image_data, player1_image_file)
         save_base64_image(player2_image_data, player2_image_file)
 
-        logging.info(f"player1_image_file={player1_image_file}")
-        logging.info(f"player2_image_file={player2_image_file}")
+        logging.info("player1_image_file=%s", player1_image_file)
+        logging.info("player2_image_file=%s", player2_image_file)
 
         # Send the two images to the Gradio client for merging
         merged_filename = f'{game["_id"]}.jpg'
         merged_image_url = merge_images(player1_image_file, player2_image_file, merged_filename)
 
-        # save the merged image to the db, and not to the file system, using base64 encoding
-        with open(os.path.join(app.config['OUTPUT_FOLDER'], merged_filename), 'rb') as file:
-            merged_image_data = base64.b64encode(file.read()).decode('utf-8')
-            mongo.db.games.update_one(
-                {"_id": ObjectId(session['game_id'])},
-                {"$set": {"merged_image": merged_image_url}}
-            )
+        # Save the merged image URL in the database
+        mongo.db.games.update_one(
+            {"_id": ObjectId(session['game_id'])},
+            {"$set": {"merged_image": merged_image_url}}
+        )
 
         print(f"Images merged successfully. {merged_image_url=}")
         return jsonify({"status": "ready", "message": "Merged Photo is Ready", "merged_image_url": merged_image_url})
@@ -572,7 +580,8 @@ def show_merged_image():
 @login_required
 def submit_guess():
     """
-    Handles the guess submission, checks if the guess is correct, and redirects the player with the result.
+    Handles the guess submission, checks if the guess is correct, 
+    and redirects the player with the result.
     """
     guess = request.form.get('guess')
 

@@ -82,7 +82,7 @@
 
         // Function to check for game readiness
         function checkForGame() {
-            fetch(`/check-created-game?game_code={{ game_code }}`)
+            fetch(`/check-random-game`)
                 .then(response => response.json())
                 .then(data => {
                     if (data.game_found) {
