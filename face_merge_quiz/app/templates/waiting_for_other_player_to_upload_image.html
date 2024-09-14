@@ -69,8 +69,9 @@
     ></script>
 
     <script>
-        // Declare a variable for the interval
+        // Declare a variable for the polling intervals
         let pollingInterval;
+        let cancelPollingInterval;
 
         // Function to check if the second player has uploaded their image
         async function checkIfReady() {
@@ -81,14 +82,31 @@
             if (result.status === 'ready') {
                 // Stop polling when the condition is met
                 clearInterval(pollingInterval);
+                clearInterval(cancelPollingInterval);
 
                 // Redirect to show the merged image
                 window.location.href = '/show_merged_image';
             }
         }
 
+        // Function to check if the game has been canceled
+        async function checkIfCanceled() {
+            const response = await fetch('/check_game_status');
+            const result = await response.json();
+
+            if (result.status === 'canceled') {
+                // Stop polling if the game was canceled
+                clearInterval(pollingInterval);
+                clearInterval(cancelPollingInterval);
+
+                // Redirect to the game cancelled page
+                window.location.href = '/game_cancelled';
+            }
+        }
+
         // Start polling every 5 seconds
         pollingInterval = setInterval(checkIfReady, 5000);
+        cancelPollingInterval = setInterval(checkIfCanceled, 5000);
 
     </script>
 </body>

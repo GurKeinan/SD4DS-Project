@@ -622,3 +622,37 @@ def game_result(result):
     Displays the result of the game (win/lose).
     """
     return render_template('game_result.html', result=result)
+
+@app.route('/cancel_game', methods=['POST'])
+@login_required
+def cancel_game():
+    print(f'User {current_user.id} is trying to cancel the game.')
+
+    # Find the game where the current user is one of the players
+    game = mongo.db.games.find_one({"players": {"$in": [current_user.id]}})
+    
+    if game:
+        game_id = game["_id"]  # Extract the ObjectId from the game document
+
+        # Update the game status to 'canceled' in the database
+        mongo.db.games.update_one({"_id": ObjectId(game_id)}, {"$set": {"status": "canceled"}})
+        print(f'Game {game_id} canceled successfully')
+        return jsonify({'status': 'canceled'})
+
+    return jsonify({'error': 'Game not found'}), 400
+
+
+@app.route('/check_game_status', methods=['GET'])
+@login_required
+def check_game_status():
+    game = mongo.db.games.find_one({"players": {"$in": [current_user.id]}})
+    if game and game['status'] == 'canceled':
+        # delete the game from the database
+        mongo.db.games.delete_one({"_id": game["_id"]})
+        return jsonify({'status': 'canceled'})
+    return jsonify({'status': 'active'})
+
+@app.route('/game_cancelled')
+@login_required
+def game_cancelled():
+    return render_template('game_cancelled.html')

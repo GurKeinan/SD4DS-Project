@@ -144,8 +144,10 @@
         }
     }
 
-    // Function to dynamically search for photos
+    // Function to dynamically search for photos (well-behaved navigation)
     function searchPhotos() {
+        isWellBehavedNavigation = true;  // Mark this as well-behaved navigation
+
         const query = document.getElementById('photo-search').value;
 
         fetch('/search_photos', {
@@ -170,6 +172,8 @@
                 img.onclick = () => selectPhoto(res.url);
                 photoGrid.appendChild(img);
             });
+
+            isWellBehavedNavigation = false;  // Reset after the behavior
         });
     }
 
@@ -209,10 +213,55 @@
         });
     }
 
+    // Polling to check if the game has been canceled by the other player (well-behaved navigation)
+    function checkGameStatus() {
+        isWellBehavedNavigation = true;  // Mark as well-behaved
+
+        fetch('/check_game_status')
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'canceled') {
+                    window.location.href = '/game_cancelled'; // Redirect to game cancelled page
+                } else {
+                    setTimeout(checkGameStatus, 3000); // Poll again after 3 seconds
+                }
+
+                isWellBehavedNavigation = false;  // Reset after each check
+            });
+    }
+
+    // Start polling the game status once the page loads
+    document.addEventListener('DOMContentLoaded', function() {
+        setTimeout(checkGameStatus, 3000);  // Start polling after 3 seconds
+    });
+
+    // Handle player leaving the game (detecting navigation away or closing the tab)
+    window.addEventListener('beforeunload', function(event) {
+        // Check if the navigation is well-behaved
+        if (!isWellBehavedNavigation) {
+            cancelGame(); // Trigger game cancellation when a player exits unexpectedly
+        }
+    });
+
+    // Handle well-behaved navigation (when players submit the form, navigate to show_merged_image, etc.)
+    let isWellBehavedNavigation = false;
+
+    // Function to cancel the game on the server when a player exits
+    function cancelGame() {
+        fetch('/cancel_game', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ game_id: '{{ game_id }}' }) // Pass the game ID to the server
+        });
+    }
+
     // Handle form submission
     const form = document.getElementById('uploadForm');
     form.onsubmit = async (e) => {
         e.preventDefault();
+        isWellBehavedNavigation = true; // Mark well-behaved navigation
 
         const fileInput = document.getElementById('file').files[0];
         const selectedPhotoUrl = document.getElementById('selected-photo-url').value;
@@ -251,10 +300,11 @@
             window.location.href = '/waiting-for-other';
         }
         else if (result.status === 'ready') {
+            isWellBehavedNavigation = true;  // Mark this navigation as well-behaved
+
             // If the second player has already uploaded their image, redirect to the next page
             window.location.href = '/show_merged_image';
         }
-
     };
     </script>
 </body>
