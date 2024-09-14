@@ -406,7 +406,6 @@ def upload_image():
 
     # Check if both users have uploaded or selected images
     game = mongo.db.games.find_one({"_id": ObjectId(session['game_id'])})
-    logging.info(f"{game['player_images'].keys()=}")
     player_images = game.get("player_images", {})
 
     if len(player_images) == 2:  # Both players have uploaded/selected images
@@ -433,10 +432,11 @@ def upload_image():
             merged_image_data = base64.b64encode(file.read()).decode('utf-8')
             mongo.db.games.update_one(
                 {"_id": ObjectId(session['game_id'])},
-                {"$set": {"merged_image": merged_image_data}}
+                {"$set": {"merged_image": merged_image_url}}
             )
-        print(f"Images merged successfully. Merged image URL: {merged_image_url[1:]}")
-        return jsonify({"status": "ready", "message": "Merged Photo is Ready", "merged_image_url": merged_image_url[1:]})
+
+        print(f"Images merged successfully. {merged_image_url=}")
+        return jsonify({"status": "ready", "message": "Merged Photo is Ready", "merged_image_url": merged_image_url})
 
     return jsonify({"status": "waiting", "message": "Waiting for the other player to upload/select their image."})
 
@@ -458,15 +458,14 @@ def check_merge_ready():
     return jsonify({"status": "waiting", "message": "Still waiting for the other player."})
 
 
-@app.route('/show_merged_image/<path:merged_image_url>')
+@app.route('/show_merged_image')
 @login_required
-def show_merged_image(merged_image_url):
-    import urllib.parse
-
-    decoded_url = urllib.parse.unquote(merged_image_url)
-
+def show_merged_image():
     # Retrieve the current game document from the database
     game = mongo.db.games.find_one({"_id": ObjectId(session['game_id'])})
+
+    # retrieve the url of the merged image
+    merged_image_url = game.get("merged_image")
 
     # Determine the opponent's ID based on the player ID
     if game['player1_id'] == current_user.id:
@@ -488,9 +487,10 @@ def show_merged_image(merged_image_url):
     options = [correct_answer] + distractions
     random.shuffle(options)
 
-    print(decoded_url)
+    print(f'the decoded url show_merged_image sends to the template is {merged_image_url}, and the player options are {options}')
     # Render the page with the merged image and options
-    return render_template('guess_image.html', image_url=decoded_url, options=options)
+    print(f'{os.listdir(os.getcwd())=}')
+    return render_template('guess_image.html', image_url=merged_image_url, options=options)
 
 
 # @app.route('/show_merged_image/<path_image>')

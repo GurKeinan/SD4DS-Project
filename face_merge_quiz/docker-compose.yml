@@ -9,7 +9,7 @@ services:
     depends_on:
       - mongodb
     volumes:
-      - .:/app
+      - ./app:/app/app  # Maps the app directory to the container's working directory
     env_file:
       - .env
 

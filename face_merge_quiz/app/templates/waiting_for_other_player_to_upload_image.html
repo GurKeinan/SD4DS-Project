@@ -69,6 +69,9 @@
     ></script>
 
     <script>
+        // Declare a variable for the interval
+        let pollingInterval;
+
         // Function to check if the second player has uploaded their image
         async function checkIfReady() {
             const response = await fetch('/check_merge_ready');
@@ -76,12 +79,17 @@
             document.getElementById('status').innerHTML = result.message;
 
             if (result.status === 'ready') {
-                window.location.href = '/show_merged_image/' + encodeURIComponent(result.merged_image_url);
+                // Stop polling when the condition is met
+                clearInterval(pollingInterval);
+
+                // Redirect to show the merged image
+                window.location.href = '/show_merged_image';
             }
         }
 
-        // Poll the server every 5 seconds to check if the second player is ready
-        setInterval(checkIfReady, 5000);
+        // Start polling every 5 seconds
+        pollingInterval = setInterval(checkIfReady, 5000);
+
     </script>
 </body>
 </html>

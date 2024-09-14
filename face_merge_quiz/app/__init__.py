@@ -9,8 +9,8 @@ import os
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your_secret_key'  # TODO change this
 app.config['MONGO_URI'] = 'mongodb://face-merge-mongodb:27017/face_merge_db'
-app.config['UPLOAD_FOLDER'] = 'static/uploads/'
-app.config['OUTPUT_FOLDER'] = 'static/outputs/'
+app.config['UPLOAD_FOLDER'] = 'app/static/uploads/'
+app.config['OUTPUT_FOLDER'] = 'app/static/outputs/'
 
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 os.makedirs(app.config['OUTPUT_FOLDER'], exist_ok=True)
