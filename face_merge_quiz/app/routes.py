@@ -33,6 +33,7 @@ def home():
     print(f'There are {waiting_users_collection.count_documents({})} users in the waiting room.')
     print(f'there are {mongo.db.games.count_documents({})} games in the database')
     print()
+    flash('Welcome to the home page!', 'danger')
     return render_template('index.html')
 
 
@@ -44,7 +45,7 @@ def sign_up():
 
         user_exists = mongo.db.users.find_one({"username": username})
         if user_exists:
-            flash('Username already exists!', 'error')
+            flash('Username already exists!', 'danger')
             return redirect(url_for('sign_up'))
 
         hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
@@ -77,7 +78,7 @@ def login():
             flash('Logged in successfully!', 'success')
             return redirect(url_for('home'))
         else:
-            flash('Login unsuccessful. Please check username and password', 'error')
+            flash('Login unsuccessful. Please check username and password', 'danger')
 
     return render_template('login.html')
 
@@ -223,7 +224,7 @@ def join_random_game():
         return redirect(url_for('load_image'))
 
     # If no match was found yet, redirect to the waiting room for random games
-    flash('Waiting for another player to join...')
+    flash('Waiting for another player to join...', 'info')
     return redirect(url_for('waiting_room_random_game'))
 
 
@@ -304,7 +305,7 @@ def enter_code():
 
         else:
             print(f'User {current_user.id} entered an invalid game code.')
-            flash('Invalid or already used game code. Please try again.', 'error')
+            flash('Invalid or already used game code. Please try again.', 'danger')
             return redirect(url_for('enter_code'))
 
     return render_template('enter_code.html')
