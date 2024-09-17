@@ -242,7 +242,7 @@ def join_random_game():
 
         # Immediately redirect the second player to the game ready page
         waiting_users_collection.delete_one({"_id": player2['_id']})
-        return redirect(url_for('game_ready'))
+        return redirect(url_for('load_image'))
 
     # If no match was found yet, redirect to the waiting room for random games
     flash('Waiting for another player to join...')
@@ -321,7 +321,7 @@ def enter_code():
 
             # Redirect both players to the game ready page
             session['game_id'] = str(game['_id'])
-            return redirect(url_for('game_ready'))
+            return redirect(url_for('load_image'))
 
         else:
             print(f'User {current_user.id} entered an invalid game code.')
@@ -339,7 +339,7 @@ def game_ready():
     if game_id:
         game = mongo.db.games.find_one({"_id": ObjectId(game_id)})
         if game:
-            return render_template('game_ready.html', game=game)
+            return render_template('load_image.html', game=game)
     return redirect(url_for('home'))
 
 
