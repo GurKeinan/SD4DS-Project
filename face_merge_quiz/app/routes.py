@@ -10,8 +10,8 @@ import base64
 from flask import render_template, redirect, url_for, flash, request, jsonify, session
 from flask_login import login_user, logout_user, current_user, login_required
 
-from app import app, mongo, bcrypt, login_manager, waiting_users_collection
-from app.models import User
+# from app import app, mongo, bcrypt, login_manager, waiting_users_collection
+# from app.models import User
 
 from . import app, mongo, bcrypt, login_manager, waiting_users_collection
 from .models import User
