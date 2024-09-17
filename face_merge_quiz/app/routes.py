@@ -1,35 +1,24 @@
-import json
 import os
 import random
 import re
 import string
-from io import BytesIO
-from time import sleep
+from datetime import datetime, timezone
+import requests
+from bson.objectid import ObjectId
+import base64
 
-from PIL import Image
 from flask import render_template, redirect, url_for, flash, request, jsonify, session
 from flask_login import login_user, logout_user, current_user, login_required
-import requests
-from werkzeug.utils import secure_filename
-from datetime import timezone
 
-
-from . import app, mongo, bcrypt, login_manager, face_swap_client
-from .models import User
-from bson.objectid import ObjectId
-from datetime import datetime
 from app import app, mongo, bcrypt, login_manager, waiting_users_collection
 from app.models import User
 
-from . import app, mongo, bcrypt, login_manager
+from . import app, mongo, bcrypt, login_manager, waiting_users_collection
 from .models import User
-from .utils import fetch_photos_extended, save_image_from_url, merge_images
-from gradio_client import file as gradio_file
-
-import base64
+from .utils import fetch_photos_extended, merge_images
+# from gradio_client import file as gradio_file
 
 import logging
-
 # Set up basic logging
 logging.basicConfig(level=logging.INFO)
 
@@ -154,6 +143,7 @@ def waiting_room_created_game():
     game_code = request.args.get('game_code')
     return render_template('waiting_room_created_game.html', game_code=game_code)
 
+
 @app.route('/check-created-game')
 @login_required
 def check_created_game():
@@ -172,11 +162,12 @@ def check_created_game():
 
     return jsonify({"game_found": False})
 
+
 @app.route('/leave-created-game-waiting-room', methods=['POST'])
 @login_required
 def leave_created_game_waiting_room():
     print(f'User {current_user.id} is trying to leave the waiting room for a created game.')
-    
+
     # Retrieve the game created by the current user
     game_id = session.get('game_id')
     if game_id:
@@ -194,7 +185,6 @@ def leave_created_game_waiting_room():
 @app.route('/join-random-game')
 @login_required
 def join_random_game():
-
     # If this user already has a record in the waiting users collection, remove it
     waiting_users_collection.delete_one({"user_id": current_user.id})
     # if this user was in any previous game, delete the game
@@ -217,7 +207,7 @@ def join_random_game():
         print(f'Found {len(waiting_users)} users in the waiting room.')
         print(f'User 1: {current_user.id}, User 2: {waiting_users[0]["user_id"]}')
         player2 = waiting_users_collection.find_one({"user_id": current_user.id})
-        player1 = waiting_users[0] # this is the first player among the two to search for a game
+        player1 = waiting_users[0]  # this is the first player among the two to search for a game
 
         # Create a new game for them
         game_code = generate_game_code()
@@ -247,6 +237,7 @@ def join_random_game():
     # If no match was found yet, redirect to the waiting room for random games
     flash('Waiting for another player to join...')
     return redirect(url_for('waiting_room_random_game'))
+
 
 @app.route('/leave-random-waiting-room', methods=['POST'])
 @login_required
@@ -286,7 +277,7 @@ def check_random_game():
     #     if waiting_user and waiting_user.get("game_found"):
     #         session['game_id'] = waiting_user.get("game_id")
 
-    #         # Cleanup the waiting user entry after the game is found
+    #         # Clean up the waiting user entry after the game is found
     #         waiting_users_collection.delete_one({"_id": waiting_user['_id']})
 
     #         return jsonify({"game_found": True})
@@ -372,6 +363,7 @@ def save_base64_image(base64_string, filename):
     with open(filename, "wb") as file:
         file.write(image_data)
 
+
 @app.route('/upload_image', methods=['POST'])
 @login_required
 def upload_image():
@@ -402,7 +394,7 @@ def upload_image():
         response = requests.get(selected_photo_url, timeout=10)
         if response.status_code == 200:
             image_bytes = response.content
-            # Optionally save the image to the file system if needed
+            # Optionally, save the image to the file system if needed
             with open(os.path.join(app.config['UPLOAD_FOLDER'], f'{current_user.id}.jpg'), 'wb') as f:
                 f.write(image_bytes)
             # Store the image data in base64 in the database
@@ -507,7 +499,8 @@ def show_merged_image():
     options = [correct_answer] + distractions
     random.shuffle(options)
 
-    print(f'the decoded url show_merged_image sends to the template is {merged_image_url}, and the player options are {options}')
+    print(f'The decoded url show_merged_image sends to the template is {merged_image_url}, '
+          f'and the player options are {options}')
     # Render the page with the merged image and options
     print(f'{os.listdir(os.getcwd())=}')
     return render_template('guess_image.html', image_url=merged_image_url, options=options)
@@ -624,6 +617,7 @@ def game_result(result):
     """
     return render_template('game_result.html', result=result)
 
+
 @app.route('/cancel_game', methods=['POST'])
 @login_required
 def cancel_game():
@@ -631,7 +625,7 @@ def cancel_game():
 
     # Find the game where the current user is one of the players
     game = mongo.db.games.find_one({"players": {"$in": [current_user.id]}})
-    
+
     if game:
         game_id = game["_id"]  # Extract the ObjectId from the game document
 
@@ -652,6 +646,7 @@ def check_game_status():
         mongo.db.games.delete_one({"_id": game["_id"]})
         return jsonify({'status': 'canceled'})
     return jsonify({'status': 'active'})
+
 
 @app.route('/game_cancelled')
 @login_required

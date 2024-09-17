@@ -18,3 +18,4 @@
 *.iml
 face_merge_quiz/.vscode/settings.json
 */app/static
+/itamar_experiments/
