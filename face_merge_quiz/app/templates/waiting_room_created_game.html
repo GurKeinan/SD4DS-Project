@@ -61,7 +61,7 @@
                 .then(response => response.json())
                 .then(data => {
                     if (data.game_found) {
-                        isWellBehavedNavigation = true; // Set flag to true when navigating to game
+                        isWellBehavedNavigation = true; // Set the flag to true when navigating to game
                         window.location.href = "/game-ready";
                     } else {
                         setTimeout(checkForGame, 3000);  // Poll again after 3 seconds
@@ -73,15 +73,20 @@
             setTimeout(checkForGame, 3000);  // Start polling after 3 seconds
         });
 
-        // Function to attempt leaving the waiting room using sendBeacon or fetch
+        // Function to attempt to leave the waiting room using sendBeacon or fetch
         function leaveWaitingRoom() {
+
+            const redirectToHome = () => window.location.href = '/';
+
             if (navigator.sendBeacon) {
                 const success = navigator.sendBeacon('/leave-created-game-waiting-room');
                 if (!success) {
-                    fetch('/leave-created-game-waiting-room', { method: 'POST' });
+                    fetch('/leave-created-game-waiting-room', { method: 'POST' }).then(redirectToHome);
+                } else {
+                    redirectToHome();
                 }
             } else {
-                fetch('/leave-created-game-waiting-room', { method: 'POST' });
+                fetch('/leave-created-game-waiting-room', { method: 'POST' }).then(redirectToHome);
             }
         }
 
