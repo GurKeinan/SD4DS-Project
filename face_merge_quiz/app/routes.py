@@ -1,7 +1,5 @@
 import os
 import random
-import re
-import string
 from datetime import datetime, timezone
 import requests
 from bson.objectid import ObjectId
@@ -10,15 +8,11 @@ import base64
 from flask import render_template, redirect, url_for, flash, request, jsonify, session
 from flask_login import login_user, logout_user, current_user, login_required
 
-# from app import app, mongo, bcrypt, login_manager, waiting_users_collection
-# from app.models import User
-
 from . import app, mongo, bcrypt, login_manager, waiting_users_collection
 from .models import User
-from .utils import fetch_photos_extended, merge_images
-# from gradio_client import file as gradio_file
-
+from .utils import generate_game_code, fetch_photos_extended, save_base64_image, merge_images
 import logging
+
 # Set up basic logging
 logging.basicConfig(level=logging.INFO)
 
@@ -30,12 +24,6 @@ def load_user(user_id):
         return User(user_data['username'], user_data['password'], user_data['wins'], user_data['losses'],
                     str(user_data['_id']))
     return None
-
-
-def generate_game_code(length=6):
-    """Generates a random game code."""
-    letters_and_digits = string.ascii_uppercase + string.digits
-    return ''.join(random.choice(letters_and_digits) for _ in range(length))
 
 
 @app.route('/')
@@ -322,7 +310,7 @@ def enter_code():
     return render_template('enter_code.html')
 
 
-# TODO: I think it can be removed.
+# TODO: remove?
 @app.route('/game-ready')
 @login_required
 def game_ready():
@@ -347,21 +335,9 @@ def search_photos():
 
     # Call the function to get the URLs based on the text query
     photo_urls = fetch_photos_extended(query, amount=10)
-    # for photo in photo_urls:
-    #     print(photo['url'])
-    #     print(photo['alt'])
-    #     print('\n')
 
     # Return the URLs as a JSON response
     return jsonify({"photos": photo_urls})
-
-
-def save_base64_image(base64_string, filename):
-    cleaned_string = re.sub(r'\s+', '', base64_string)
-    padded_base64_string = cleaned_string + "=" * ((4 - len(cleaned_string) % 4) % 4)
-    image_data = base64.b64decode(padded_base64_string)
-    with open(filename, "wb") as file:
-        file.write(image_data)
 
 
 @app.route('/upload_image', methods=['POST'])
@@ -504,81 +480,6 @@ def show_merged_image():
     # Render the page with the merged image and options
     print(f'{os.listdir(os.getcwd())=}')
     return render_template('guess_image.html', image_url=merged_image_url, options=options)
-
-
-# @app.route('/show_merged_image/<path_image>')
-# @login_required
-# def show_merged_image(path_image):
-#     # import urllib.parse
-#
-#     # decoded_url = urllib.parse.unquote(merged_image_url)
-#
-#     # Retrieve the current game document from the database
-#     game = mongo.db.games.find_one({"_id": ObjectId(session['game_id'])})
-#
-#     # Determine the opponent's ID based on the player ID
-#     if game['player1_id'] == current_user.id:
-#         opponent_id = game['player2_id']
-#     elif game['player2_id'] == current_user.id:
-#         opponent_id = game['player1_id']
-#     else:
-#         return "Error: Current user is not part of this game.", 400
-#
-#     # Check if the opponent has submitted their answers
-#     if 'answers' not in game or str(opponent_id) not in game['answers']:
-#         return "Error: Opponent's answers not available.", 400
-#
-#     # Retrieve the correct answer and distractions
-#     correct_answer = game['answers'][str(opponent_id)]["correct"]
-#     distractions = game['answers'][str(opponent_id)]["distractions"]
-#
-#     # Shuffle the options for guessing
-#     options = [correct_answer] + distractions
-#     random.shuffle(options)
-#
-#     # print(decoded_url)
-#     # Render the page with the merged image and options
-#     print(path_image)
-#     return render_template('guess_image.html', image_url=path_image, options=options)
-
-# @app.route('/show_merged_image/<merged_image_url>')
-# @login_required
-# def show_merged_image(merged_image_url):
-#     import requests
-#     response = requests.get(merged_image_url)
-#
-#     # Check if the request was successful
-#     if response.status_code == 200:
-#         # Convert the image content to a PIL Image
-#         print("Image successfully retrieved.")
-#     else:
-#         print("Failed to retrieve the image. Status code:", response.status_code)
-#
-#     # Retrieve the current game document from the database
-#     game = mongo.db.games.find_one({"_id": ObjectId(session['game_id'])})
-#
-#     # Determine the opponent's ID based on the player ID
-#     if game['player1_id'] == current_user.id:
-#         opponent_id = game['player2_id']
-#     elif game['player2_id'] == current_user.id:
-#         opponent_id = game['player1_id']
-#     else:
-#         return "Error: Current user is not part of this game.", 400
-#
-#     # Check if the opponent has submitted their answers
-#     if 'answers' not in game or str(opponent_id) not in game['answers']:
-#         return "Error: Opponent's answers not available.", 400
-#
-#     # Retrieve the correct answer and distractions
-#     correct_answer = game['answers'][str(opponent_id)]["correct"]
-#     distractions = game['answers'][str(opponent_id)]["distractions"]
-#
-#     # Shuffle the options for guessing
-#     options = [correct_answer] + distractions
-#     random.shuffle(options)
-#
-#     # Render the page with the merged image and options
-#     return render_template('guess_image.html', image_url=merged_image_url, options=options)
 
 
 @app.route('/submit_guess', methods=['POST'])

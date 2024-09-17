@@ -1,15 +1,23 @@
 import random
 import requests
-import os  # use for getting environment variables
+import string
+import os
+import re
+import base64
 from PIL import Image
 from flask import url_for
 from gradio_client import handle_file
 from . import face_swap_client, app
-import base64
 
 
 MAX_INDEX = 1
 SEARCH_URL = 'https://www.googleapis.com/customsearch/v1'
+
+
+def generate_game_code(length=6):
+    """Generates a random game code."""
+    letters_and_digits = string.ascii_uppercase + string.digits
+    return ''.join(random.choice(letters_and_digits) for _ in range(length))
 
 
 def fetch_photos(query, prefix='', suffix='', start_index=1):
@@ -78,6 +86,14 @@ def save_image_from_url(url, file_name):
         print(f"Image successfully saved as {file_name}")
     else:
         print("Failed to retrieve the image.")
+
+
+def save_base64_image(base64_string, filename):
+    cleaned_string = re.sub(r'\s+', '', base64_string)
+    padded_base64_string = cleaned_string + "=" * ((4 - len(cleaned_string) % 4) % 4)
+    image_data = base64.b64decode(padded_base64_string)
+    with open(filename, "wb") as file:
+        file.write(image_data)
 
 
 def merge_images(image1_path, image2_path, output_path):
