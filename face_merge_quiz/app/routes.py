@@ -4,6 +4,7 @@ import random
 import re
 import string
 from io import BytesIO
+from time import sleep
 
 from PIL import Image
 from flask import render_template, redirect, url_for, flash, request, jsonify, session
