@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload or Choose Photo</title>
+    <style>
+        /* Basic styling for image selection */
+        img {
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: border-color 0.3s ease;
+            max-width: 100%;
+        }
+        img.selected {
+            border-color: blue;
+        }
+
+        /* Scrollable container for images */
+        #photo-grid {
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid #ccc;
+            padding: 10px;
+        }
+
+        /* Style the images inside the grid */
+        #photo-grid img {
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Upload a Photo or Choose a Predefined One</h1>
+
+    <img src="{{ photo_url }}" class="img-fluid mb-4" width="400" alt="ye">
+
+    <img src="data:image/png;base64,{{ image_data }}" alt="Base64 Image" class="img-fluid mb-4" width="400">
+
+    <form method="POST" enctype="multipart/form-data">
+
+        <!-- Upload button -->
+        <label for="file">Upload a photo:</label>
+        <input type="file" class="form-control-file" capture="camera"
+               name="file" id="file" accept="image/*" onchange="previewFile()"><br><br>
+
+        <!-- Text input to search for photos -->
+        <label for="photo-search">Search for photos:</label>
+        <input type="text" id="photo-search" placeholder="Enter text to search for photos">
+        <button type="button" onclick="searchPhotos()">Search</button>
+
+        <br><br>
+
+        <!-- Scrollable container for predefined or fetched images -->
+        <div id="photo-grid" style="width: 1050px;">
+            <!-- Photos will be dynamically inserted here -->
+        </div>
+
+        <!-- Image preview -->
+        <h3>Selected Photo:</h3>
+        <img id="selected-photo" src="" alt="No photo selected" width="200" style="display: none;">
+
+        <input type="hidden" name="selected-photo-url" id="selected-photo-url"><br>
+
+        <!-- Form submit button -->
+        <button type="submit">Submit</button>
+    </form>
+
+    <script>
+        // Function to display the file uploaded by the user
+        function previewFile() {
+            const preview = document.getElementById('selected-photo');
+            const fileInput = document.getElementById('file');
+            const file = fileInput.files[0];
+            {#const selectedFile = document.getElementById('selected-file');#}
+            const reader = new FileReader();
+
+            reader.addEventListener("load", function () {
+                // Display the uploaded file
+                preview.src = reader.result;
+                preview.style.display = 'block';
+
+                {#selectedFile.value = reader.result;#}
+
+                // Clear any selected photo URL
+                document.getElementById('selected-photo-url').value = '';
+                {#document.getElementById('selected-photo-url').value = reader.result;#}
+
+                // Unselect any preselected images
+                clearSelectedImages();
+
+            }, false);
+
+            if (file) {
+                reader.readAsDataURL(file);
+            }
+        }
+
+        // Function to dynamically search for photos
+        function searchPhotos() {
+            const query = document.getElementById('photo-search').value;
+
+            fetch('/search_photos', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ query: query }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Clear existing photos in the grid
+                const photoGrid = document.getElementById('photo-grid');
+                photoGrid.innerHTML = '';
+
+                // Add the new photos returned by the server
+                data.photos.forEach(res => {
+                    const img = document.createElement('img');
+                    img.src = res.url;
+                    img.width = 100;
+                    img.alt = res.alt;
+                    img.onclick = () => selectPhoto(res.url);
+                    photoGrid.appendChild(img);
+                });
+            });
+        }
+
+        // Function to select a photo from search results
+        function selectPhoto(photoUrl) {
+            const preview = document.getElementById('selected-photo');
+            preview.src = photoUrl;
+            preview.style.display = 'block';
+
+            // Set the hidden input to hold the selected photo URL
+            document.getElementById('selected-photo-url').value = photoUrl;
+
+            // Clear file input since a predefined photo was selected
+            clearFileInput();
+
+            // Highlight selected image and unselect others
+            clearSelectedImages();
+            const images = document.querySelectorAll('#photo-grid img');
+            images.forEach(img => {
+                if (img.src === photoUrl) {
+                    img.classList.add('selected');
+                }
+            });
+        }
+
+        // Clear the file input if a photo from the search is selected
+        function clearFileInput() {
+            const fileInput = document.getElementById('file');
+            {#const selectedFile = document.getElementById('selected-file');#}
+            fileInput.value = '';
+            {#selectedFile.value = '';#}
+        }
+
+        // Clear selected images' styles
+        function clearSelectedImages() {
+            const images = document.querySelectorAll('#photo-grid img');
+            images.forEach(img => {
+                img.classList.remove('selected');
+            });
+        }
+    </script>
+</body>
+</html>
