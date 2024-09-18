@@ -4,7 +4,7 @@
 #-f docker-compose.override.yml \
 #up
 
-docker-compose -f docker-compose.test.yml up
+docker-compose -f docker-compose.test.yml up --build
 
 
 

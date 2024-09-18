@@ -7,7 +7,7 @@ COPY requirements.txt requirements.txt
 RUN pip install -r requirements.txt
 
 # Copy only the necessary files (the contents of the app folder) to an app folder in the container
-COPY app /app/app
+COPY . /app
 
 # Set environment variable to ensure Python does not buffer output
 ENV PYTHONUNBUFFERED=1
