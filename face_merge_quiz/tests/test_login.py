@@ -7,6 +7,7 @@ class TestLogin(unittest.TestCase):
     def setUpClass(cls):
         cls.app = app  # Create the app
         cls.client = cls.app.test_client()  # Create a test client
+        cls.app.testing = True
 
     def setUp(self):
         # Push an application context
@@ -17,17 +18,46 @@ class TestLogin(unittest.TestCase):
         # Pop the application context
         self.app_context.pop()
 
-    def test_homepage(self):
-        """Test the homepage route."""
-        response = self.client.get('/')  # Directly calling the homepage URL
-        self.assertEqual(response.status_code, 200)
-        self.assertIn(b'Welcome', response.data)  # Check if 'Welcome' is in the HTML
+    def _login(self, username, password):
+        return self.client.post('/login', data=dict(
+            username=username,
+            password=password
+        ), follow_redirects=True)
 
-    def test_face_merge_route(self):
-        """Test the face merge route."""
-        response = self.client.get('/face_merge')  # Directly calling the face merge URL
-        self.assertEqual(response.status_code, 200)
-        self.assertIn(b'Face Merge', response.data)
+    def test_get_login(self):
+        response = self.client.get('/login')
+        self.assertIn(b'Login', response.data)
+        self.assertIn(b'Username', response.data)
+        self.assertIn(b'Password', response.data)
+        self.assertIn(b'Sign up here', response.data)
+
+    def test_login_unsigned_up_user(self):
+        response = self._login('notLoggedInUser', 'notLoggedInPassword')
+        self.assertIn(b'Login unsuccessful. Please check username and password', response.data)
 
 if __name__ == '__main__':
     unittest.main()
+
+
+
+    # import requests
+    #
+    # # URL of the login form
+    # url = "http://localhost:5001/login"  # Replace with your actual URL
+    #
+    # # Data to be submitted
+    # form_data = {
+    #     'username': 'testuser',  # Replace with actual username
+    #     'password': 'testpassword'  # Replace with actual password
+    # }
+    #
+    # # Send POST request with form data
+    # response = requests.post(url, data=form_data)
+    #
+    # # Check the response
+    # if response.status_code == 200:
+    #     print("Login request successful!")
+    #     print("Response text:", response.text)
+    # else:
+    #     print(f"Failed to login, status code: {response.status_code}")
+
