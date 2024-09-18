@@ -80,14 +80,14 @@
             const redirectToHome = () => window.location.href = '/';
 
             if (navigator.sendBeacon) {
-                const success = navigator.sendBeacon('/leave-created-game-waiting-room');
+                const success = navigator.sendBeacon('/leave-random-waiting-room');
                 if (!success) {
-                    fetch('/leave-created-game-waiting-room', { method: 'POST' }).then(redirectToHome);
+                    fetch('/leave-random-waiting-room', { method: 'POST' }).then(redirectToHome);
                 } else {
                     redirectToHome();
                 }
             } else {
-                fetch('/leave-created-game-waiting-room', { method: 'POST' }).then(redirectToHome);
+                fetch('/leave-random-waiting-room', { method: 'POST' }).then(redirectToHome);
             }
         }
 
@@ -106,6 +106,14 @@
         });
     </script>
 
-    {% include 'flashed_messages.html' %}
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        <ul>
+        {% for category, message in messages %}
+            <li class="alert alert-{{ category }}">{{ message }}</li>
+        {% endfor %}
+        </ul>
+    {% endif %}
+    {% endwith %}
 </body>
 </html>

@@ -68,8 +68,6 @@
 
             <input type="hidden" name="selected-photo-url" id="selected-photo-url"><br>
 
-{#            <button type="submit" class="btn btn-success mt-3">Submit</button>#}
-
             <hr>
 
             <!-- Answers Form Section -->
@@ -214,27 +212,51 @@
         setTimeout(checkGameStatus, 3000);  // Start polling after 3 seconds
     });
 
-    // Handle player leaving the game (detecting navigation away or closing the tab)
-    window.addEventListener('beforeunload', function(event) {
-        // Check if the navigation is well-behaved
-        if (!isWellBehavedNavigation) {
-            cancelGame(); // Trigger game cancellation when a player exits unexpectedly
-        }
-    });
-
     // Handle well-behaved navigation (when players submit the form, navigate to show_merged_image, etc.)
     let isWellBehavedNavigation = false;
 
     // Function to cancel the game on the server when a player exits
     function cancelGame() {
-        fetch('/cancel_game', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ game_id: '{{ game_id }}' }) // Pass the game ID to the server
-        });
+        const data = new FormData();
+        data.append('game_id', '{{ session["game_id"] }}'); // Pass the game ID to the server
+
+        const success = navigator.sendBeacon('/cancel_game', data);
+        if (!success) {
+            // Fallback if sendBeacon fails
+            fetch('/cancel_game', {
+                method: 'POST',
+                body: data,
+            });
+        }
     }
+
+    // Handle player leaving the game (detecting navigation away or closing the tab)
+    window.addEventListener('beforeunload', function(event) {
+        if (!isWellBehavedNavigation) {
+            cancelGame(); // Trigger game cancellation when a player exits unexpectedly
+        }
+    });
+
+    // Handle visibility change (useful for mobile devices)
+    document.addEventListener('visibilitychange', function() {
+        if (document.hidden && !isWellBehavedNavigation) {
+            cancelGame();
+        }
+    });
+
+    // Handle pagehide event (more reliable on iOS)
+    window.addEventListener('pagehide', function(event) {
+        if (!isWellBehavedNavigation) {
+            cancelGame();
+        }
+    });
+
+    // Handle unload event
+    window.addEventListener('unload', function(event) {
+        if (!isWellBehavedNavigation) {
+            cancelGame();
+        }
+    });
 
     // Handle form submission
     const form = document.getElementById('uploadForm');

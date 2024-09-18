@@ -33,7 +33,7 @@ def home():
     print(f'There are {waiting_users_collection.count_documents({})} users in the waiting room.')
     print(f'there are {mongo.db.games.count_documents({})} games in the database')
     print()
-    flash('Welcome to the home page!', 'danger')
+    # flash('Welcome to the home page!', 'danger')
     return render_template('index.html')
 
 
@@ -224,7 +224,7 @@ def join_random_game():
         return redirect(url_for('load_image'))
 
     # If no match was found yet, redirect to the waiting room for random games
-    flash('Waiting for another player to join...', 'info')
+    # flash('Waiting for another player to join...', 'info')
     return redirect(url_for('waiting_room_random_game'))
 
 
@@ -504,10 +504,10 @@ def submit_guess():
     correct_answer = game['answers'][str(opponent_id)]['correct']
 
     if guess == correct_answer:
-        flash('Congratulations! You guessed correctly!', 'success')
+        # flash('Congratulations! You guessed correctly!', 'success')
         return redirect(url_for('game_result', result='win'))
     else:
-        flash('Sorry, wrong guess. Better luck next time!', 'danger')
+        # flash('Sorry, wrong guess. Better luck next time!', 'danger')
         return redirect(url_for('game_result', result='lose'))
 
 
