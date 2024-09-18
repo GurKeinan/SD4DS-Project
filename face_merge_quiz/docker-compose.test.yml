@@ -13,20 +13,28 @@ services:
       - ./app:/app/app  # Maps the app directory to the container's working directory
       # TODO: delete the above line before submitting
     env_file:
-      - .env
+      - .env  # Default .env file for regular mode
     environment:
-        - MONGO_URI=mongodb://face-merge-mongodb:27017/db
+      - FLASK_ENV=testing
+      - MONGO_URI=mongodb://face-merge-mongodb:27017/testdb  # Note that it is testdb and not db.
+      # The above line is the same mongo instance as in docker-compose.yml, but a different database
+
+    command:
+      - python -m tests.test_login
 
   mongodb:
     image: mongo
     container_name: face-merge-mongodb
-    volumes:
-      - mongo-data:/data/db
+    volumes: []
+    tmpfs:
+      - /data/db  # Store data in memory for test mode to prevent persistence
     networks:
       - face-merge-net
 
+
 volumes:
-  mongo-data:
+  mongo-data: null  # This removes the volume definition for tests
 
 networks:
   face-merge-net:
+
