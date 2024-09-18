@@ -35,29 +35,40 @@ class TestLogin(unittest.TestCase):
         response = self._login('notLoggedInUser', 'notLoggedInPassword')
         self.assertIn(b'Login unsuccessful. Please check username and password', response.data)
 
+    def _signup(self, username, password):
+        return self.client.post('/sign-up', data=dict(
+            username=username,
+            password=password
+        ), follow_redirects=True)
+
+    def test_get_signup(self):
+        response = self.client.get('/sign-up')
+        self.assertIn(b'Sign Up', response.data)
+        self.assertIn(b'Username', response.data)
+        self.assertIn(b'Password', response.data)
+        self.assertIn(b'Already have an account?', response.data)
+
+    def test_post_signup(self):
+        response = self._signup('testuser', 'testpassword')
+        self.assertIn(b'Account created successfully!', response.data)
+        self.assertIn(b'Join a Game', response.data)
+
+    def test_post_signup_existing_user(self):
+        self._signup('testuser2', 'testpassword')
+        response = self._signup('testuser2', 'testpassword')
+        self.assertIn(b'Username already exists. Please choose another one.', response.data)
+
+    def test_login_signed_up_user(self):
+        # First sign up the user
+        self._signup('testuser3', 'testpassword')
+
+        # Then try to log in with the same credentials
+        response = self._login('testuser3', 'testpassword')
+
+        # Check if the login was successful (you might need to adjust the success message)
+        self.assertIn(b'Logged in successfully!', response.data)
+        self.assertIn(b'Welcome', response.data)
+
+
 if __name__ == '__main__':
     unittest.main()
-
-
-
-    # import requests
-    #
-    # # URL of the login form
-    # url = "http://localhost:5001/login"  # Replace with your actual URL
-    #
-    # # Data to be submitted
-    # form_data = {
-    #     'username': 'testuser',  # Replace with actual username
-    #     'password': 'testpassword'  # Replace with actual password
-    # }
-    #
-    # # Send POST request with form data
-    # response = requests.post(url, data=form_data)
-    #
-    # # Check the response
-    # if response.status_code == 200:
-    #     print("Login request successful!")
-    #     print("Response text:", response.text)
-    # else:
-    #     print(f"Failed to login, status code: {response.status_code}")
-

@@ -45,7 +45,7 @@ def sign_up():
 
         user_exists = mongo.db.users.find_one({"username": username})
         if user_exists:
-            flash('Username already exists!', 'danger')
+            flash('Username already exists. Please choose another one.', 'danger')
             return redirect(url_for('sign_up'))
 
         hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
