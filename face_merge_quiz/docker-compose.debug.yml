@@ -1,0 +1,49 @@
+version: '3'
+services:
+  web:
+    build: .
+    container_name: face-merge-web
+    ports:
+      - "5001:5000"
+    networks:
+      - face-merge-net
+    depends_on:
+      - mongodb
+    volumes:
+      - ./app:/app/app
+      # TODO: delete the above line before submitting
+    env_file:
+      - .env
+    environment:
+      - MONGO_URI=mongodb://admin:password@face-merge-mongodb:27017/db?authSource=admin
+
+  mongodb:
+    image: mongo
+    container_name: face-merge-mongodb
+    volumes:
+      - mongo-data:/data/db
+    networks:
+      - face-merge-net
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=admin
+      - MONGO_INITDB_ROOT_PASSWORD=password
+
+  mongo-express:
+    image: mongo-express:1.0.0-18
+    restart: always # fixes MongoNetworkError when mongodb is not ready when mongo-express starts
+    ports:
+      - "8080:8081"
+    environment:
+      - ME_CONFIG_MONGODB_ADMINUSERNAME=admin
+      - ME_CONFIG_MONGODB_ADMINPASSWORD=password
+      - ME_CONFIG_MONGODB_SERVER=face-merge-mongodb
+    networks:
+      - face-merge-net
+
+
+
+volumes:
+  mongo-data:
+
+networks:
+  face-merge-net:
