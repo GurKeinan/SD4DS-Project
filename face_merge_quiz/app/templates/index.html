@@ -33,6 +33,46 @@
                 <p>
                     Ready to play? <a href="/join-game" class="btn btn-primary btn-lg" role="button">Join a Game</a>
                 </p>
+
+                <!-- User Stats Section -->
+                <div class="mt-5">
+                    <h3>Your Game Stats:</h3>
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="card text-center">
+                                <div class="card-body">
+                                    <h5 class="card-title">Total Games</h5>
+                                    <p class="card-text display-4">{{ total_games }}</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card text-center">
+                                <div class="card-body">
+                                    <h5 class="card-title">Wins</h5>
+                                    <p class="card-text display-4 text-success">{{ wins }}</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card text-center">
+                                <div class="card-body">
+                                    <h5 class="card-title">Losses</h5>
+                                    <p class="card-text display-4 text-danger">{{ losses }}</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card text-center">
+                                <div class="card-body">
+                                    <h5 class="card-title">Win Rate</h5>
+                                    <p class="card-text display-4">{{ win_percentage }}%</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 {% else %}
                 <p>
                     To get started, please

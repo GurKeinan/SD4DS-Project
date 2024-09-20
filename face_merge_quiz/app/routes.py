@@ -1,9 +1,14 @@
+"""
+This module contains the routes for the FaceMergeQuiz application.
+"""
+
 import os
 import random
+import base64
 from datetime import datetime, timezone
+import logging
 import requests
 from bson.objectid import ObjectId
-import base64
 
 from flask import render_template, redirect, url_for, flash, request, jsonify, session
 from flask_login import login_user, logout_user, current_user, login_required
@@ -11,7 +16,6 @@ from flask_login import login_user, logout_user, current_user, login_required
 from . import app, mongo, bcrypt, login_manager, waiting_users_collection
 from .models import User
 from .utils import generate_game_code, fetch_photos_extended, save_base64_image, merge_images
-import logging
 
 # Set up basic logging
 logging.basicConfig(level=logging.INFO)
@@ -33,8 +37,27 @@ def home():
     print(f'There are {waiting_users_collection.count_documents({})} users in the waiting room.')
     print(f'there are {mongo.db.games.count_documents({})} games in the database')
     print()
-    # flash('Welcome to the home page!', 'danger')
-    return render_template('index.html')
+
+    # Calculate user statistics
+    wins = current_user.wins
+    losses = current_user.losses
+    total_games = wins + losses
+    if total_games > 0:
+        win_ratio = wins / total_games
+        win_percentage = round(win_ratio * 100, 2)
+    else:
+        win_ratio = 0
+        win_percentage = 0
+
+    # Pass statistics to the template
+    return render_template(
+        'index.html', 
+        wins=wins, 
+        losses=losses, 
+        total_games=total_games, 
+        win_percentage=win_percentage
+    )
+
 
 
 @app.route('/sign-up', methods=['GET', 'POST'])
@@ -535,8 +558,12 @@ def submit_guess():
         mongo.db.games.delete_one({"_id": game["_id"]})
 
     if guess == correct_answer:
+        # increase the wins of the current user
+        mongo.db.users.update_one({"_id": ObjectId(current_user.id)}, {"$inc": {"wins": 1}})
         return redirect(url_for('game_result', result='win'))
     else:
+        # increase the losses of the current user
+        mongo.db.users.update_one({"_id": ObjectId(current_user.id)}, {"$inc": {"losses": 1}})
         return redirect(url_for('game_result', result='lose'))
 
 
