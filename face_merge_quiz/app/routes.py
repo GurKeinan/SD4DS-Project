@@ -600,8 +600,11 @@ def cancel_game():
 def check_game_status():
     game = mongo.db.games.find_one({"players": {"$in": [current_user.id]}})
     if game and game['status'] == 'canceled':
-        # delete the game from the database
-        mongo.db.games.delete_one({"_id": game["_id"]})
+        # delete the game from the database if you are the only player in the game, else remove yourself
+        if len(game['players']) == 1:
+            mongo.db.games.delete_one({"_id": game["_id"]})
+        else:
+            mongo.db.games.update_one({"_id": game["_id"]}, {"$pull": {"players": current_user.id}})
         return jsonify({'status': 'canceled'})
     return jsonify({'status': 'active'})
 

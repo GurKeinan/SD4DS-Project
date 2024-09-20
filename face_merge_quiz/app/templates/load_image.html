@@ -47,7 +47,7 @@
             <div class="form-group">
                 <label for="file">Upload a photo:</label>
                 <input type="file" class="form-control-file" capture="camera"
-                       name="file" id="file" accept="image/*" onchange="previewFile()">
+                       name="file" id="file" accept="image/*" onchange="previewFile()" onclick="fileInputInProgress = true;">
             </div>
 
             <!-- Text input to search for photos -->
@@ -97,12 +97,17 @@
     </div>
 
     <script>
+        // Add a flag to track if file input is in use
+        let fileInputInProgress = false;
+
     // Function to display the file uploaded by the user
     function previewFile() {
         const preview = document.getElementById('selected-photo');
         const fileInput = document.getElementById('file');
         const file = fileInput.files[0];
         const reader = new FileReader();
+
+        fileInputInProgress = false;
 
         reader.addEventListener("load", function () {
             // Display the uploaded file preview
@@ -233,21 +238,21 @@
 
     // Handle player leaving the game (detecting navigation away or closing the tab)
     window.addEventListener('beforeunload', function(event) {
-        if (!isWellBehavedNavigation) {
+        if (!isWellBehavedNavigation && !fileInputInProgress) {
             cancelGame(); // Trigger game cancellation when a player exits unexpectedly
         }
     });
 
     // Handle visibility change (useful for mobile devices)
     document.addEventListener('visibilitychange', function() {
-        if (document.hidden && !isWellBehavedNavigation) {
+        if (document.hidden && !isWellBehavedNavigation && !fileInputInProgress) {
             cancelGame();
         }
     });
 
     // Handle pagehide event (more reliable on iOS)
     window.addEventListener('pagehide', function(event) {
-        if (!isWellBehavedNavigation) {
+        if (!isWellBehavedNavigation && !fileInputInProgress) {
             cancelGame();
         }
     });

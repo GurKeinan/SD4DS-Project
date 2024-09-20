@@ -1,5 +1,10 @@
-docker-compose -f docker-compose.debug.yml up --build
+#docker-compose -f docker-compose.debug.yml up --build
 
+
+# in case of "network not found" error
+docker-compose down
+docker volume prune
+docker-compose -f docker-compose.debug.yml up --build --force-recreate
 
 
 
