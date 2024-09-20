@@ -441,8 +441,11 @@ def waiting_for_other():
 def check_merge_ready():
     game = mongo.db.games.find_one({"_id": ObjectId(session['game_id'])})
     # check if the game document has the merged image URL
-    if game.get("merged_image"):
-        return jsonify({"status": "ready", "merged_image_url": game["merged_image"]})
+    if game:
+        if game.get("merged_image"):
+            return jsonify({"status": "ready", "merged_image_url": game["merged_image"]})
+    else:
+        render_template('game_cancelled.html')
 
     return jsonify({"status": "waiting", "message": "Still waiting for the other player."})
 
@@ -503,11 +506,37 @@ def submit_guess():
     # Get the correct answer (provided by the other player)
     correct_answer = game['answers'][str(opponent_id)]['correct']
 
+    # update the game to show that the current user has submitted their guess
+    if 'guess_was_submitted' not in game:
+        mongo.db.games.update_one(
+            {"_id": ObjectId(session['game_id'])},
+            {"$set": {"guess_was_submitted": 1}}
+        )
+    else:
+        # retrieve the images url in the game and delete them
+        # - the images that the players uploaded and the merged image
+        player_images = game.get("player_images", {})
+        if str(game['player1_id']) in player_images:
+            player1_image_file = os.path.join(app.config['UPLOAD_FOLDER'],
+                                              f'{game["player1_id"]}.jpg')
+            if os.path.exists(player1_image_file):
+                os.remove(player1_image_file)
+        if str(game['player2_id']) in player_images:
+            player2_image_file = os.path.join(app.config['UPLOAD_FOLDER'],
+                                              f'{game["player2_id"]}.jpg')
+            if os.path.exists(player2_image_file):
+                os.remove(player2_image_file)
+        if 'merged_image' in game:
+            merged_image_file = os.path.join(app.config['OUTPUT_FOLDER'],
+                                             f'{game["_id"]}.jpg')
+            if os.path.exists(merged_image_file):
+                os.remove(merged_image_file)
+        # delete the game from the database
+        mongo.db.games.delete_one({"_id": game["_id"]})
+
     if guess == correct_answer:
-        # flash('Congratulations! You guessed correctly!', 'success')
         return redirect(url_for('game_result', result='win'))
     else:
-        # flash('Sorry, wrong guess. Better luck next time!', 'danger')
         return redirect(url_for('game_result', result='lose'))
 
 

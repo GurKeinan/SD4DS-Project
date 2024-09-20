@@ -227,6 +227,7 @@
                 method: 'POST',
                 body: data,
             });
+            window.location.href = '/game_cancelled'; // Redirect to game canceled page
         }
     }
 
@@ -297,6 +298,7 @@
         document.getElementById('status').innerHTML = result.message;
 
         if (result.status === 'waiting') {
+            isWellBehavedNavigation = true;  // Mark this navigation as well-behaved
             // Redirect both users to a waiting room until both have uploaded their images
             window.location.href = '/waiting-for-other';
         }
