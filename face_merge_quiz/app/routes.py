@@ -30,6 +30,11 @@ def load_user(user_id):
     return None
 
 
+
+@app.route('/healthcheck')
+def healthcheck():
+    return 'OK', 200
+
 @app.route('/')
 @login_required
 def home():
