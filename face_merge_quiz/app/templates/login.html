@@ -35,6 +35,8 @@
             </div>
         </nav>
 
+        {% include 'flashed_messages.html' %}
+
         <div class="container mt-5">
             <h2>Login</h2>
             <form method="POST" action="/login">
@@ -81,6 +83,6 @@
             crossorigin="anonymous"
         ></script>
 
-        {% include 'flashed_messages.html' %}
+
     </body>
 </html>

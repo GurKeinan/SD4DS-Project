@@ -1,10 +1,16 @@
 import requests
+from flask import flash, redirect, url_for
+
 from . import app, mongo, bcrypt, login_manager
 from flask_login import login_required
 from .models import User
 from bson.objectid import ObjectId
 
-
+# Custom unauthorized handler
+@login_manager.unauthorized_handler
+def unauthorized():
+    flash('Please log in to access this page.', 'danger')
+    return redirect(url_for('login'))
 @login_manager.user_loader
 def load_user(user_id):
     user_data = mongo.db.users.find_one({"_id": ObjectId(user_id)})
