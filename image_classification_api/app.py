@@ -82,26 +82,33 @@ preprocess = transforms.Compose([
     transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
 ])
 
+
+
 def classify_image(filepath):
-    with Image.open(filepath) as img:
-        # Convert PNG images (with an alpha channel) to RGB
-        if img.mode == 'RGBA':
-            img = img.convert('RGB')
+    # a simple version
+    time.sleep(8)
+    return [{'name': 'tomato', 'score': 0.9}, {'name': 'carrot', 'score': 0.02}]
 
-        # Preprocess the image
-        img_t = preprocess(img)
-        batch_t = torch.unsqueeze(img_t, 0)
-
-        # Perform inference
-        with torch.no_grad():
-            out = model(batch_t)
-
-        # Get the top 5 predictions
-        _, indices = torch.topk(out, 5)
-        percentages = torch.nn.functional.softmax(out, dim=1)[0] * 100
-        predictions = [(class_names[idx], percentages[idx].item()) for idx in indices[0]]
-
-    return [{'name': name, 'score': score / 100} for name, score in predictions]
+# def classify_image(filepath):
+#     with Image.open(filepath) as img:
+#         # Convert PNG images (with an alpha channel) to RGB
+#         if img.mode == 'RGBA':
+#             img = img.convert('RGB')
+#
+#         # Preprocess the image
+#         img_t = preprocess(img)
+#         batch_t = torch.unsqueeze(img_t, 0)
+#
+#         # Perform inference
+#         with torch.no_grad():
+#             out = model(batch_t)
+#
+#         # Get the top 5 predictions
+#         _, indices = torch.topk(out, 5)
+#         percentages = torch.nn.functional.softmax(out, dim=1)[0] * 100
+#         predictions = [(class_names[idx], percentages[idx].item()) for idx in indices[0]]
+#
+#     return [{'name': name, 'score': score / 100} for name, score in predictions]
 
 # def classify_image(image_path):
 #     """
@@ -176,6 +183,9 @@ def upload_image():
 
 @app.route('/async_upload', methods=['POST'])
 def async_upload():
+    # log the request and which gunicorn worker is handling it:
+    logging.info(f"Request received by worker {os.getpid()}")
+
     if 'image' not in request.files:
         return jsonify({'error': {'code': 400, 'message': 'No file part'}}), 400
 
@@ -281,4 +291,4 @@ def get_status():
 
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
+    app.run(host='0.0.0.0', port=6000)
