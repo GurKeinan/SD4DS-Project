@@ -46,7 +46,11 @@
                 try {
                     console.log('hi llol')
                     console.log(data)
-                    document.getElementById('container-request-id').innerHTML = convertJsonToTable(data.matches)
+                    if (data.matches) {
+                        document.getElementById('container-request-id').innerHTML = convertJsonToTable(data.matches)
+                    } else {
+                        document.getElementById('container-request-id').innerHTML = JSON.stringify(data)
+                    }
                 } catch (e) {
                     document.getElementById('container-request-id').innerHTML = e
                 }
