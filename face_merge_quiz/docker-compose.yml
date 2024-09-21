@@ -24,6 +24,24 @@ services:
     networks:
       - face-merge-net
 
+  image-classification-api:
+    build: ../image_classification_api
+    container_name: face-merge-image-classification-api
+    ports:
+      - "6000:6000"
+    networks:
+      - face-merge-net
+    depends_on:
+      - mongodb
+    volumes:
+      - ../image-classification-api:/app/app
+    env_file:
+      - .env
+    environment:
+      - MONGO_URI=mongodb://face-merge-mongodb:27017/api_db
+      # in the above line, api_db is the name of the database
+      - GUNICORN_WORKERS=7
+
 volumes:
   mongo-data:
 

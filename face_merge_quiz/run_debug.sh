@@ -7,6 +7,10 @@ docker volume prune
 docker-compose -f docker-compose.debug.yml up --build --force-recreate
 
 
+# when done, please run:
+#docker-compose -f docker-compose.debug.yml down
+
+
 
 
 
