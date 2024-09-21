@@ -30,8 +30,7 @@ import threading
 app = Flask(__name__)
 app.config['MONGO_URI'] = os.environ.get('MONGO_URI')  # MongoDB URI
 
-import logging
-logging.basicConfig(level=logging.INFO)
+
 logging.info(f"MongoDB URI: {app.config['MONGO_URI']}")
 
 def get_db():
@@ -83,72 +82,73 @@ preprocess = transforms.Compose([
     transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
 ])
 
-# def classify_image(filepath):
-#     with Image.open(filepath) as img:
-#         # Convert PNG images (with an alpha channel) to RGB
-#         if img.mode == 'RGBA':
-#             img = img.convert('RGB')
+def classify_image(filepath):
+    with Image.open(filepath) as img:
+        # Convert PNG images (with an alpha channel) to RGB
+        if img.mode == 'RGBA':
+            img = img.convert('RGB')
+
+        # Preprocess the image
+        img_t = preprocess(img)
+        batch_t = torch.unsqueeze(img_t, 0)
+
+        # Perform inference
+        with torch.no_grad():
+            out = model(batch_t)
+
+        # Get the top 5 predictions
+        _, indices = torch.topk(out, 5)
+        percentages = torch.nn.functional.softmax(out, dim=1)[0] * 100
+        predictions = [(class_names[idx], percentages[idx].item()) for idx in indices[0]]
+
+    return [{'name': name, 'score': score / 100} for name, score in predictions]
+
+# def classify_image(image_path):
+#     """
+#     Classifies an image using Hugging Face Inference API with a ViT model.
 #
-#         # Preprocess the image
-#         img_t = preprocess(img)
-#         batch_t = torch.unsqueeze(img_t, 0)
+#     Returns:
+#     - result (list): A list of dictionaries, each containing the classification label and its score.
+#                      Example: [{'label': 'tomato', 'score': 0.9}, {'label': 'carrot', 'score': 0.02}]
 #
-#         # Perform inference
-#         with torch.no_grad():
-#             out = model(batch_t)
+#     Raises:
+#     - Exception: If there is an error with the request or the classification fails.
+#     """
 #
-#         # Get the top 5 predictions
-#         _, indices = torch.topk(out, 5)
-#         percentages = torch.nn.functional.softmax(out, dim=1)[0] * 100
-#         predictions = [(class_names[idx], percentages[idx].item()) for idx in indices[0]]
+#     # Hugging Face API URL for the image classification model
+#     api_url = "https://api-inference.huggingface.co/models/google/vit-base-patch16-224"
 #
-#     return [{'name': name, 'score': score / 100} for name, score in predictions]
-
-def classify_image(image_path):
-    """
-    Classifies an image using Hugging Face Inference API with a ViT model.
-
-    Returns:
-    - result (list): A list of dictionaries, each containing the classification label and its score.
-                     Example: [{'label': 'tomato', 'score': 0.9}, {'label': 'carrot', 'score': 0.02}]
-
-    Raises:
-    - Exception: If there is an error with the request or the classification fails.
-    """
-
-    # Hugging Face API URL for the image classification model
-    api_url = "https://api-inference.huggingface.co/models/google/vit-base-patch16-224"
-
-    # Prepare the request headers with the API token
-    headers = {
-        "Authorization": f"Bearer {os.environ['HF_API_TOKEN']}"
-    }
-
-    try:
-        # Open the image file in binary mode and read its content
-        with open(image_path, 'rb') as image_file:
-            image_data = image_file.read()
-
-        # Send the request to the Hugging Face API
-        response = requests.post(api_url, headers=headers, data=image_data)
-
-        # Check if the request was successful
-        if response.status_code == 200:
-            # Parse the JSON response
-            result = response.json()
-            # this API returns a list of dictionaries, with 'label' and 'score' keys, while we need 'name' and 'score':
-            for match in result:
-                match['name'] = match.pop('label')
-
-            # Return the classification results
-            return result
-        else:
-            # Raise an exception if the request failed
-            raise Exception(f"Error: {response.status_code} - {response.text}")
-
-    except Exception as e:
-        print(f"An error occurred: {e}")
-        return None
+#     # Prepare the request headers with the API token
+#     headers = {
+#         "Authorization": f"Bearer {os.environ['HF_API_TOKEN']}"
+#     }
+#
+#     try:
+#         # Open the image file in binary mode and read its content
+#         with open(image_path, 'rb') as image_file:
+#             image_data = image_file.read()
+#
+#         # Send the request to the Hugging Face API
+#         response = requests.post(api_url, headers=headers, data=image_data)
+#         logging.info(f"Response: {response}")
+#
+#         # Check if the request was successful
+#         if response.status_code == 200:
+#             # Parse the JSON response
+#             result = response.json()
+#             # this API returns a list of dictionaries, with 'label' and 'score' keys, while we need 'name' and 'score':
+#             for match in result:
+#                 match['name'] = match.pop('label')
+#
+#             # Return the classification results
+#             return result
+#         else:
+#             # Raise an exception if the request failed
+#             raise Exception(f"Error: {response.status_code} - {response.text}")
+#
+#     except Exception as e:
+#         print(f"An error occurred: {e}")
+#         return None
 
 
 @app.route('/upload_image', methods=['POST'])

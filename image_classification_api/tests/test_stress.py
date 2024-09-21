@@ -8,7 +8,7 @@ import requests
 import time
 import multiprocessing
 
-class TestMoreComplex(BaseAPITest):
+class TestStress(BaseAPITest):
 
     def test_stress(self):
         """

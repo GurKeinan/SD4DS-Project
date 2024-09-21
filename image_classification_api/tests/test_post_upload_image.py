@@ -18,12 +18,15 @@ class TestPostUploadImage(BaseAPITest):
                 self.assertEqual(response.status_code, 200)
 
     def _test_successful_upload(self, true_filename='britney.png'):
-        filenames = ["test_image.png", "somepic.png", "image with spaces.png", "image_with_ünîçødé.png"]
+        filenames = ["test_image", "somepic", "image with spaces", "image_with_ünîçødé"]
+        true_file_type = true_filename.split('.')[-1]
+        filenames = [f'{filename}.{true_file_type}' for filename in filenames]
+        filenames += [f'{filename}.png' for filename in filenames]  # just to check more options
 
         for filename in filenames:
             with self.subTest(filename=filename):
                 with open(true_filename, 'rb') as image_file:
-                    files = {'image': (filename, image_file, 'image/png')}
+                    files = {'image': (filename, image_file, 'image/' + true_file_type)}
                     response = requests.post(self.endpoint, files=files)
 
                 self.assertEqual(response.status_code, 200)
