@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload or Choose Photo</title>
+    <link
+        rel="stylesheet"
+        href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css"
+        integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh"
+        crossorigin="anonymous"
+    />
+    <link
+        rel="stylesheet"
+        href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css"
+        crossorigin="anonymous"
+    />
+    <style>
+        img {
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: border-color 0.3s ease;
+            max-width: 100%;
+        }
+
+        #photo-grid {
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid #ccc;
+            padding: 10px;
+        }
+
+        #photo-grid img {
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    {% include 'navbar.html' %}
+
+    <!-- Main Content -->
+    <div class="container mt-5">
+        <h1>Upload a Photo or Choose a Predefined One</h1>
+
+        <form id="uploadForm" method="POST" enctype="multipart/form-data">
+            <!-- Upload button -->
+            <div class="form-group">
+                <label for="file">Upload a photo:</label>
+                <input type="file" class="form-control-file" capture="camera"
+                       name="file" id="file" accept="image/*" onchange="previewFile()" onclick="fileInputInProgress = true;">
+            </div>
+
+            <!-- Text input to search for photos -->
+            <div class="form-group">
+                <label for="photo-search">Search for photos:</label>
+                <input type="text" class="form-control" id="photo-search" placeholder="Enter text to search for photos">
+                <button type="button" class="btn btn-primary mt-2" onclick="searchPhotos()">Search</button>
+            </div>
+
+            <!-- Scrollable container for predefined or fetched images -->
+            <div id="photo-grid" class="container" style="width: 100%;">
+                <!-- Photos will be dynamically inserted here -->
+            </div>
+
+            <!-- Image preview -->
+            <h3>Selected Photo:</h3>
+            <img id="selected-photo" src="" alt="No photo selected" class="img-fluid" width="200" style="display: none;">
+
+            <input type="hidden" name="selected-photo-url" id="selected-photo-url"><br>
+
+            <hr>
+
+            <!-- Final Submit Button for the Form -->
+            <button type="submit" class="btn btn-primary mt-3">Submit Image</button>
+        </form>
+
+        <div id="status"></div>
+    </div>
+
+    <!-- Add jQuery and Bootstrap JS -->
+    <script
+        src="https://code.jquery.com/jquery-3.4.1.slim.min.js"
+        integrity="sha384-J6qa4849blE2+poTykj4SKk61HdWw2haqT9LzEYt8bo9FqW5IQp1DLiyn77ema"
+        crossorigin="anonymous"
+    ></script>
+    <script
+        src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.3/dist/umd/popper.min.js"
+        integrity="sha384-pzjw8f+ua7Kw1TIq2dPUyJOjkAzlw78L72/tqazGzBzoOUcFtuGrnV9L9lFtkEWw"
+        crossorigin="anonymous"
+    ></script>
+    <script
+        src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js"
+        integrity="sha384-/oEn4N1mrchbjYrVp60zmfrROFlIHuV6rU1AGeQImFXCUmjboW2ZSwNVjC6Emevz"
+        crossorigin="anonymous"
+    ></script>
+</body>
+</html>

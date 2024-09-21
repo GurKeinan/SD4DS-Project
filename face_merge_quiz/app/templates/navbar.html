@@ -11,6 +11,21 @@
                     <a class="nav-item nav-link" id="home" href="/">Home</a>
                     {% if user.is_authenticated %}
                     <a class="nav-item nav-link" id="join_game" href="/join-game">Join a Game</a>
+
+                    <!-- Dropdown for Image Classification Service -->
+                    <div class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="imageClassificationDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                            Image Classification Service
+                        </a>
+                        <div class="dropdown-menu" aria-labelledby="imageClassificationDropdown">
+                            <a class="dropdown-item" href="/api/upload_image">upload an image (sync)</a>
+                            <a class="dropdown-item" href="/api/async_upload">upload an image (async)</a>
+                            <a class="dropdown-item" href="/api/result">get async result</a>
+                            <a class="dropdown-item" href="/api/status">status</a>
+                        </div>
+                    </div>
+
+
                     <a class="nav-item nav-link" id="logout" href="/logout">Logout</a>
                     &nbsp;&nbsp;&nbsp;
                     <span class="navbar-text ml-auto"> | </span>

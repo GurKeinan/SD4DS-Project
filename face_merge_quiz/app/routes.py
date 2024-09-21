@@ -588,12 +588,17 @@ def cancel_game():
     # Find the game where the current user is one of the players
     game = mongo.db.games.find_one({"players": {"$in": [current_user.id]}})
 
+
     if game:
         game_id = game["_id"]  # Extract the ObjectId from the game document
 
         # Update the game status to 'canceled' in the database
         mongo.db.games.update_one({"_id": ObjectId(game_id)}, {"$set": {"status": "canceled"}})
         print(f'Game {game_id} canceled successfully')
+
+        # remove yourself from the game
+        mongo.db.games.update_one({"_id": ObjectId(game_id)}, {"$pull": {"players": current_user.id}})
+
         return jsonify({'status': 'canceled'})
 
     return jsonify({'error': 'Game not found'}), 400
