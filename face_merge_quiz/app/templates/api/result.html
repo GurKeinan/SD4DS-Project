@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link
+        rel="stylesheet"
+        href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css"
+        integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh"
+        crossorigin="anonymous"
+    />
+    <link
+        rel="stylesheet"
+        href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css"
+        crossorigin="anonymous"
+    />
+    <title>Join Game with Code</title>
+</head>
+<body>
+    {% include 'navbar.html' %}
+
+    <div class="container mt-5" id="container-request-id">
+        <h2>Enter your request id</h2>
+        <form id="gameForm">
+            <div class="form-group">
+                <label for="request_id">Enter Game Code</label>
+                <input type="text" class="form-control" id="request_id" name="request_id" required>
+            </div>
+            <button type="submit" class="btn btn-primary">Join Game</button>
+        </form>
+    </div>
+
+
+
+    <script type="module">
+        import { convertJsonToTable } from '/static/js/render_results.js';
+
+        document.getElementById('gameForm').addEventListener('submit', function(event) {
+            event.preventDefault();  // Prevent the default form submission
+            // send to /api/result a POST request with the form data
+            fetch('/api/result', {
+                method: 'POST',
+                body: new FormData(document.getElementById('gameForm'))
+            }).then(response => response.json())
+            .then(data => {
+                try {
+                    console.log('hi llol')
+                    console.log(data)
+                    document.getElementById('container-request-id').innerHTML = convertJsonToTable(data.matches)
+                } catch (e) {
+                    document.getElementById('container-request-id').innerHTML = e
+                }
+            }
+            )
+        })
+
+    </script>
+
+
+
+    <script
+        src="https://code.jquery.com/jquery-3.2.1.slim.min.js"
+        integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN"
+        crossorigin="anonymous"
+    ></script>
+    <script
+        src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"
+        integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q"
+        crossorigin="anonymous"
+    ></script>
+    <script
+        src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"
+        integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl"
+        crossorigin="anonymous"
+    ></script>
+
+
+    {% include 'flashed_messages.html' %}
+</body>
+</html>

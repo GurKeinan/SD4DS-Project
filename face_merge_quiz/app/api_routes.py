@@ -55,6 +55,15 @@ def api_async_upload():
 
         # post the image to the image classification API, with content-type image/jpeg or image/png and content-disposition form-data; name="image"; filename=whatever
         response = requests.post(f'{BASE_URL}/async_upload', files=files)
-        logging.info(f'{response.json()=}')
         return str(response.json()['request_id'])
     return render_template('api/async_upload.html')
+
+@app.route('/api/result', methods=['GET', 'POST'])
+@login_required
+def api_result():
+    if request.method == 'POST':
+        request_id = request.form['request_id']
+        response = requests.get(f'{BASE_URL}/result/{request_id}')
+        logging.info(f'{response.json()=}')
+        return response.json()
+    return render_template('api/result.html')
