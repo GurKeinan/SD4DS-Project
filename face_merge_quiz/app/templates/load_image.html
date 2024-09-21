@@ -240,6 +240,7 @@
             data.append('game_id', '{{ session["game_id"] }}'); // Pass the game ID to the server
 
             const success = navigator.sendBeacon('/cancel_game', data);
+            window.location.href = '/game_cancelled'; // Redirect to game canceled page
             if (!success) {
                 // Fallback if sendBeacon fails
                 fetch('/cancel_game', {
