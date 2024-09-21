@@ -50,9 +50,8 @@
         <h1 id="title-with-instructions">Upload a Photo or Choose a Predefined One</h1>
 
 
-
+        <h3 class="mt-4">Upload a photo:</h3>
         <form id="uploadForm" method="POST" enctype="multipart/form-data">
-            <h3 class="mt-4">Upload a photo:</h3>
             <!-- Upload button -->
             <div class="form-group">
                 <label for="file"></label>
@@ -150,29 +149,6 @@
             });
         }
 
-        function convertJsonToTable(json) {
-          let table = `
-            <table style="width:100%; border-collapse: collapse;">
-              <tr>
-                <th style="border: 2px solid black; padding: 10px;">Name</th>
-                <th style="border: 2px solid black; padding: 10px;">Score</th>
-              </tr>
-          `;
-
-          json.matches.forEach(match => {
-            table += `
-              <tr>
-                <td style="border: 2px solid black; padding: 10px;">${match.name}</td>
-                <td style="border: 2px solid black; padding: 10px;">${match.score}</td>
-              </tr>
-            `;
-          });
-
-          table += "</table>";
-
-          return table;
-        }
-
         // Handle form submission
         const form = document.getElementById('uploadForm');
         form.onsubmit = async (e) => {
@@ -191,14 +167,15 @@
             }
 
             // Send the form data to the api server
-            const response = await fetch('/api/upload_image', {
+            const response = await fetch('/api/async_upload', {
                 method: 'POST',
                 body: formData
             });
 
-            const result = await response.json();
             try{
-                document.getElementById('matches').innerHTML = convertJsonToTable(result);
+                document.getElementById('matches').innerHTML =
+                    "Thank you for choosing our API image classification service. Your request id is: " +
+                    await response.text();
             }
             catch(err){
                 document.getElementById('matches').innerHTML = "An error occurred: " + err;

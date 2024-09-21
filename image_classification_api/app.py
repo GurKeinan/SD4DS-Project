@@ -86,7 +86,7 @@ preprocess = transforms.Compose([
 
 def classify_image(filepath):
     # a simple version
-    time.sleep(8)
+    time.sleep(1)
     return [{'name': 'tomato', 'score': 0.9}, {'name': 'carrot', 'score': 0.02}]
 
 # def classify_image(filepath):
@@ -165,7 +165,7 @@ def upload_image():
 
     file = request.files['image']
 
-    if file.filename == '':
+    if file.filename == '':  # TODO: indeed?
         return jsonify({'error': {'code': 400, 'message': 'No selected file'}}), 400
 
     if file and allowed_file(file.filename):
