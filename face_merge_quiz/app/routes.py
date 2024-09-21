@@ -7,8 +7,8 @@ import random
 import base64
 from datetime import datetime, timezone
 import logging
-import requests
 from bson.objectid import ObjectId
+import requests
 
 from flask import render_template, redirect, url_for, flash, request, jsonify, session
 from flask_login import login_user, logout_user, current_user, login_required
@@ -17,7 +17,6 @@ from . import app, mongo, bcrypt, login_manager, waiting_users_collection
 from .models import User
 from .utils import generate_game_code, fetch_photos_extended, save_base64_image, merge_images
 
-import requests
 
 # Set up basic logging
 logging.basicConfig(level=logging.INFO)
@@ -30,14 +29,6 @@ def load_user(user_id):
         return User(user_data['username'], user_data['password'], user_data['wins'], user_data['losses'],
                     str(user_data['_id']))
     return None
-
-
-@app.route('/api/status')
-def api_status():
-    response = requests.get('http://face-merge-image-classification-api:6000/status')
-    return "The response from our API server is:" + response.text, response.status_code, response.headers.items()
-
-
 
 @app.route('/healthcheck')
 def healthcheck():

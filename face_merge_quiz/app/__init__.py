@@ -37,7 +37,7 @@ face_swap_client = Client(
 
 waiting_users_collection = mongo.db.waiting_users  # New collection for waiting users
 
-from . import routes
+from . import routes, api_routes
 
 @app.context_processor
 def inject_user():
