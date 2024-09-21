@@ -1,6 +1,4 @@
 import unittest
-import threading
-import app
 import socket
 
 

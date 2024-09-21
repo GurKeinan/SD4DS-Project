@@ -20,6 +20,7 @@
         - mongo
       environment:
         - GUNICORN_WORKERS=7
+        - MONGO_URI=mongodb://image-classification-db:27017/api_db
       env_file:
         - .env
 

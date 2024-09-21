@@ -1,4 +1,7 @@
 import logging
+
+from flask_pymongo import PyMongo
+
 logging.basicConfig(level=logging.INFO)
 import random
 import time
@@ -25,14 +28,18 @@ import threading
 
 
 app = Flask(__name__)
+app.config['MONGO_URI'] = os.environ.get('MONGO_URI')  # MongoDB URI
 
+import logging
+logging.basicConfig(level=logging.INFO)
+logging.info(f"MongoDB URI: {app.config['MONGO_URI']}")
 
 def get_db():
-    return MongoClient('mongodb://image-classification-db:27017/')['image_classification']
+    mongo = PyMongo(app)
+    return mongo.db
 
 # Set up MongoDB connection
-client = MongoClient('mongodb://image-classification-db:27017/')  # CHECK it is 27017 because it is like that in the docker-compose file?
-db = client['image_classification']
+db = get_db()
 
 # Define allowed extensions
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
