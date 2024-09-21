@@ -351,9 +351,15 @@ def game_ready():
 
 
 @app.route('/load_image')
+@login_required
 def load_image():
     print(f'User {current_user.id} is trying to load an image.')
-    return render_template('load_image.html')
+
+    # Get the list of predefined images
+    predefined_images = os.listdir(os.path.join(app.static_folder, 'predefined-images'))
+    predefined_images = [f'predefined-images/{img}' for img in predefined_images]
+
+    return render_template('load_image.html', predefined_images=predefined_images)
 
 
 @app.route("/search_photos", methods=["POST"])
@@ -394,22 +400,26 @@ def upload_image():
 
     # Handle selected photo URL
     elif selected_photo_url:
-        # Download the image and read it into bytes
-        response = requests.get(selected_photo_url, timeout=10)
-        if response.status_code == 200:
-            image_bytes = response.content
-            # Optionally, save the image to the file system if needed
-            with open(os.path.join(app.config['UPLOAD_FOLDER'], f'{current_user.id}.jpg'), 'wb') as f:
-                f.write(image_bytes)
-            # Store the image data in base64 in the database
-            file_data = base64.b64encode(image_bytes).decode('utf-8')
-            mongo.db.games.update_one(
-                {"_id": ObjectId(session['game_id'])},
-                {"$set": {f"player_images.{current_user.id}": file_data}}
-            )
-            logging.info(f"user {current_user.id} selected an image from URL and it's stored in base64")
+        if selected_photo_url.startswith('/static/'):
+            # This is a predefined image, we need to get its full path
+            image_path = os.path.join(app.root_path, selected_photo_url.lstrip('/'))
+            with open(image_path, 'rb') as f:
+                image_bytes = f.read()
         else:
-            return jsonify({"status": "error", "message": "Failed to download image from URL."})
+            # This is an image from the search results
+            response = requests.get(selected_photo_url, timeout=10)
+            if response.status_code == 200:
+                image_bytes = response.content
+            else:
+                return jsonify({"status": "error", "message": "Failed to download image from URL."})
+
+        # Store the image data in base64 in the database
+        file_data = base64.b64encode(image_bytes).decode('utf-8')
+        mongo.db.games.update_one(
+            {"_id": ObjectId(session['game_id'])},
+            {"$set": {f"player_images.{current_user.id}": file_data}}
+        )
+        logging.info(f"user {current_user.id} selected an image and it's stored in base64")
     else:
         return jsonify({"status": "error", "message": "No file or image URL provided."})
 
@@ -455,7 +465,6 @@ def upload_image():
         return jsonify({"status": "ready", "message": "Merged Photo is Ready", "merged_image_url": merged_image_url})
 
     return jsonify({"status": "waiting", "message": "Waiting for the other player to upload/select their image."})
-
 
 @app.route('/waiting-for-other')
 @login_required
