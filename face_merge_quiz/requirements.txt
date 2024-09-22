@@ -2,6 +2,7 @@ Flask~=3.0.3
 Flask-PyMongo
 Flask-Bcrypt~=1.0.1
 Flask-Login~=0.6.3
+Flask-Limiter
 gunicorn
 requests~=2.32.2
 pillow~=10.3.0

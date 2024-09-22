@@ -1,41 +1,31 @@
-import logging
-
 from flask_pymongo import PyMongo
 
-logging.basicConfig(level=logging.INFO)
 import random
 import time
-
-import requests
 from flask import Flask, request, jsonify
 import os
 from werkzeug.utils import secure_filename
-from pymongo import MongoClient
-import threading
-import torch
 from torchvision import models, transforms
-from PIL import Image
 # Load ResNet model
 from torchvision.models import ResNet50_Weights
-
-start_time = time.time()  # TODO: where should this be defined?
-
-
-
-
 import threading
 
+import logging
 
+logging.basicConfig(level=logging.INFO)
+
+start_time = time.time()  # TODO: where should this be defined?
 
 app = Flask(__name__)
 app.config['MONGO_URI'] = os.environ.get('MONGO_URI')  # MongoDB URI
 
-
 logging.info(f"MongoDB URI: {app.config['MONGO_URI']}")
+
 
 def get_db():
     mongo = PyMongo(app)
     return mongo.db
+
 
 # Set up MongoDB connection
 db = get_db()
@@ -48,12 +38,14 @@ def allowed_file(filename):
     return '.' in filename and \
         filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
+
 def generate_unique_id():
     """Generate a unique request ID randomly in the range [10000, 1000000]"""
     while True:
         new_id = random.randint(10000, 1000000)
         if db.requests.find_one({'request_id': new_id}) is None:
             return new_id
+
 
 # def cpu_bound_simulation(n):
 #     a, b = 0, 1
@@ -83,11 +75,11 @@ preprocess = transforms.Compose([
 ])
 
 
-
 def classify_image(filepath):
     # a simple version
     time.sleep(1)
     return [{'name': 'tomato', 'score': 0.9}, {'name': 'carrot', 'score': 0.02}]
+
 
 # def classify_image(filepath):
 #     with Image.open(filepath) as img:
@@ -143,7 +135,8 @@ def classify_image(filepath):
 #         if response.status_code == 200:
 #             # Parse the JSON response
 #             result = response.json()
-#             # this API returns a list of dictionaries, with 'label' and 'score' keys, while we need 'name' and 'score':
+#             # this API returns a list of dictionaries, with 'label' and 'score' keys,
+#             # while we need 'name' and 'score':
 #             for match in result:
 #                 match['name'] = match.pop('label')
 #
@@ -195,13 +188,11 @@ def async_upload():
         return jsonify({'error': {'code': 400, 'message': 'No selected file'}}), 400
 
     if file and allowed_file(file.filename):
-
         request_id = generate_unique_id()
 
         filename = secure_filename(str(request_id))
         filepath = os.path.join('/tmp', filename)
         file.save(filepath)
-
 
         # Save the request status as 'running'
         db.requests.insert_one({
@@ -268,7 +259,7 @@ def get_result(request_id):
             'error': request_data['error']
         }), 200  # CHECK: should it be 500?
 
-    print('This should not happen' + 'n'*100)
+    print('This should not happen' + 'n' * 100)
 
 
 @app.route('/status', methods=['GET'])
