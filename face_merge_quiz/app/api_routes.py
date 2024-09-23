@@ -1,3 +1,5 @@
+import os
+
 import requests
 from flask import flash, redirect, url_for, render_template, request
 
@@ -37,12 +39,7 @@ def api_status():
 @login_required
 def api_upload_image():
     if request.method == 'POST':
-        # the request is a POST request with form data, which was appended in js:  formData.append('image', fileInput);
-        files = {'image': (request.files['image'].filename, request.files['image'], request.files['image'].content_type)}
-
-        # post the image to the image classification API, with content-type image/jpeg or image/png and content-disposition form-data; name="image"; filename=whatever
-        response = requests.post(f'{BASE_URL}/upload_image', files=files)
-        return response.json()
+        return _post_request_to_api(request, 'upload_image')
     return render_template('api/upload_image.html')
 
 
@@ -50,13 +47,37 @@ def api_upload_image():
 @login_required
 def api_async_upload():
     if request.method == 'POST':
-        # the request is a POST request with form data, which was appended in js:  formData.append('image', fileInput);
-        files = {'image': (request.files['image'].filename, request.files['image'], request.files['image'].content_type)}
-
-        # post the image to the image classification API, with content-type image/jpeg or image/png and content-disposition form-data; name="image"; filename=whatever
-        response = requests.post(f'{BASE_URL}/async_upload', files=files)
-        return str(response.json()['request_id'])
+        return _post_request_to_api(request, 'async_upload')
     return render_template('api/async_upload.html')
+
+def _post_request_to_api(request_from_web, endpoint):
+    assert request_from_web.method == 'POST'
+    files = None
+
+    # the request is a POST request with form data, which was appended in js: formData.append('image', fileInput);
+    if 'image' in request.files:
+        # Make sure to pass the file stream properly
+        image = request.files['image']
+        files = {'image': (image.filename, image.stream, image.content_type)}
+
+    elif 'selected-photo-url' in request.form:
+        selected_photo_url = request.form['selected-photo-url']
+        if selected_photo_url.startswith('/static/'):
+            # This is a predefined image, we need to get its full path
+            image_path = os.path.join(app.root_path, selected_photo_url.lstrip('/'))
+            # Use 'with' to open the file, ensuring it stays open during the POST request
+            with open(image_path, 'rb') as f:
+                files = {'image': (os.path.basename(image_path), f, 'image/jpeg')}
+                # Make the request inside the 'with' block so the file is still open
+                response = requests.post(f'{BASE_URL}/{endpoint}', files=files)
+                return response.json()
+
+    # If no files were found or post failed, return an error
+    if files:
+        response = requests.post(f'{BASE_URL}/{endpoint}', files=files)
+        return response.json()
+    else:
+        return "No image provided", 400
 
 @app.route('/api/result', methods=['GET', 'POST'])
 @login_required

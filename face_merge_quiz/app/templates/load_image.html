@@ -72,9 +72,6 @@
             <!-- Predefined images -->
             <h3 class="mt-4">Choose from predefined images:</h3>
             <div id="predefined_images" class="container" style="width: 100%;">
-                {% for img in predefined_images %}
-                    <img src="{{ url_for('static', filename=img) }}" alt="Predefined image" class="img-fluid" onclick="selectPhoto('{{ url_for('static', filename=img) }}')">
-                {% endfor %}
             </div>
 
             <!-- Image preview -->
@@ -111,7 +108,10 @@
         <div id="status"></div>
     </div>
 
+    <script src="/static/js/show_predefined_images.js"></script>
+
     <script>
+
         // Add a flag to track if file input is in use
         let fileInputInProgress = false;
 
