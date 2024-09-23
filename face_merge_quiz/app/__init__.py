@@ -7,8 +7,6 @@ import httpx
 import os
 import logging
 
-from . import routes, api_routes
-
 logging.basicConfig(level=logging.INFO)
 
 app = Flask(__name__)
@@ -39,6 +37,8 @@ face_swap_client = Client(
 )
 
 waiting_users_collection = mongo.db.waiting_users  # New collection for waiting users
+
+from . import routes, api_routes  # NOTE THAT IF THIS LINE IS MOVED TO THE TOP, IT WILL CAUSE A CIRCULAR IMPORT
 
 
 @app.context_processor
