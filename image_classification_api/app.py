@@ -30,6 +30,18 @@ def get_db():
 # Set up MongoDB connection
 db = get_db()
 
+sync_job_counters = db['counters']
+# Initialize a single document for the counters if it doesn't exist
+sync_job_counters.update_one(
+    {'_id': 'counters'},
+    {'$setOnInsert': {
+        'running_count': 0,
+        'success_count': 0,
+        'error_count': 0
+    }},
+    upsert=True  # Create the document if it doesn't exist
+)
+
 # Define allowed extensions
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
 
@@ -153,24 +165,36 @@ def classify_image(filepath):
 
 @app.route('/upload_image', methods=['POST'])
 def upload_image():
+    # have another
+
     if 'image' not in request.files:
+        sync_job_counters.update_one({'_id': 'counters'}, {'$inc': {'error_count': 1}})
         return jsonify({'error': {'code': 400, 'message': 'No file part'}}), 400
 
     file = request.files['image']
 
     if file.filename == '':  # TODO: indeed?
+        sync_job_counters.update_one({'_id': 'counters'}, {'$inc': {'error_count': 1}})
         return jsonify({'error': {'code': 400, 'message': 'No selected file'}}), 400
 
     if file and allowed_file(file.filename):
-        filename = secure_filename(file.filename)
-        filepath = os.path.join('/tmp', filename)
-        file.save(filepath)
+        try:
+            sync_job_counters.update_one({'_id': 'counters'}, {'$inc': {'running_count': 1}})
+            filename = secure_filename(file.filename)
+            filepath = os.path.join('/tmp', filename)
+            file.save(filepath)
 
-        # Call the classification function
-        matches = classify_image(filepath)
+            # Call the classification function
+            matches = classify_image(filepath)
 
-        return jsonify({'matches': matches}), 200
+            sync_job_counters.update_one({'_id': 'counters'}, {'$inc': {'running_count': -1, 'success_count': 1}})
+            return jsonify({'matches': matches}), 200
+        except Exception as e:
+            # Update counters: decrement running, increment error
+            sync_job_counters.update_one({'_id': 'counters'}, {'$inc': {'running_count': -1, 'error_count': 1}})
+            return jsonify({'error': {'code': 500, 'message': 'An error occurred during processing'}}), 500
 
+    sync_job_counters.update_one({'_id': 'counters'}, {'$inc': {'error_count': 1}})
     return jsonify({'error': {'code': 400, 'message': 'File type not allowed'}}), 400
 
 
@@ -265,10 +289,11 @@ def get_result(request_id):
 @app.route('/status', methods=['GET'])
 def get_status():
     processed = {
-        'success': db.requests.count_documents({'status': 'completed'}),
-        'fail': db.requests.count_documents({'status': 'error'}),
-        'running': db.requests.count_documents({'status': 'running'}),
-        'queued': 0  # Replace it with actual queue status if implemented
+                                                                # async + sync
+        'success': db.requests.count_documents({'status': 'completed'}) + db.counters.find_one({'_id': 'counters'})['success_count'],
+        'fail': db.requests.count_documents({'status': 'error'}) + db.counters.find_one({'_id': 'counters'})['error_count'],
+        'running': db.requests.count_documents({'status': 'running'}) + db.counters.find_one({'_id': 'counters'})['running_count'],
+        'queued': 0  # we did not implement a queue
     }
 
     return jsonify({

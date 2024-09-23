@@ -11,34 +11,39 @@ services:
       - mongodb
     volumes:
       - ./app:/app/app
-      # TODO: delete the above line before submitting
     env_file:
       - .env
     environment:
-      - MONGO_URI=mongodb://admin:password@face-merge-mongodb:27017/db?authSource=admin
+      - MONGO_URI=mongodb://root:rootpassword@face-merge-mongodb:27017/db?authSource=admin
 
   mongodb:
-    image: mongo
+    image: mongo:latest
     container_name: face-merge-mongodb
+    ports:
+      - "27017:27017"
     volumes:
       - mongo-data:/data/db
     networks:
       - face-merge-net
     environment:
-      - MONGO_INITDB_ROOT_USERNAME=admin
-      - MONGO_INITDB_ROOT_PASSWORD=password
+      - MONGO_INITDB_ROOT_USERNAME=root
+      - MONGO_INITDB_ROOT_PASSWORD=rootpassword
+    command: mongod --auth
 
   mongo-express:
-    image: mongo-express:1.0.0-18
-    restart: always # fixes MongoNetworkError when mongodb is not ready when mongo-express starts
+    image: mongo-express:latest
+    container_name: face-merge-mongo-express
+    restart: always
     ports:
       - "8080:8081"
     environment:
-      - ME_CONFIG_MONGODB_ADMINUSERNAME=admin
-      - ME_CONFIG_MONGODB_ADMINPASSWORD=password
-      - ME_CONFIG_MONGODB_SERVER=face-merge-mongodb
+      - ME_CONFIG_MONGODB_ADMINUSERNAME=root
+      - ME_CONFIG_MONGODB_ADMINPASSWORD=rootpassword
+      - ME_CONFIG_MONGODB_URL=mongodb://root:rootpassword@face-merge-mongodb:27017/?authSource=admin
     networks:
       - face-merge-net
+    depends_on:
+      - mongodb
 
   image-classification-api:
     build: ../image_classification_api
@@ -54,13 +59,12 @@ services:
     env_file:
       - .env
     environment:
-      - MONGO_URI=mongodb://admin:password@face-merge-mongodb:27017/api_db?authSource=admin
-#    # in the above line, api_db is the name of the database
+      - MONGO_URI=mongodb://root:rootpassword@face-merge-mongodb:27017/api_db?authSource=admin
       - GUNICORN_WORKERS=7
-
 
 volumes:
   mongo-data:
 
 networks:
   face-merge-net:
+    driver: bridge
