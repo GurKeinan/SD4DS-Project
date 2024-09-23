@@ -31,10 +31,9 @@
     </div>
 
 
+    <script src="/static/js/convert_json_to_table.js"></script>
 
-    <script type="module">
-        import { convertJsonToTable } from '/static/js/render_results.js';
-
+    <script>
         document.getElementById('gameForm').addEventListener('submit', function(event) {
             event.preventDefault();  // Prevent the default form submission
             // send to /api/result a POST request with the form data

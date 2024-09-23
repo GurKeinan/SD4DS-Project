@@ -1,4 +1,4 @@
-export function convertJsonToTable(json) {
+function convertJsonToTable(json) {
           let table = `
             <table style="width:100%; border-collapse: collapse;">
               <tr>
@@ -6,7 +6,9 @@ export function convertJsonToTable(json) {
                 <th style="border: 2px solid black; padding: 10px;">Score</th>
               </tr>
           `;
-
+          console.log('in convertJsonToTable');
+          console.log(json);
+          console.log(typeof(json));
           json.forEach(match => {
             table += `
               <tr>
