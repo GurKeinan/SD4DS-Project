@@ -17,9 +17,31 @@ from . import app, mongo, bcrypt, login_manager, waiting_users_collection
 from .models import User
 from .utils import generate_game_code, fetch_photos_extended, save_base64_image, merge_images
 
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+
+limiter = Limiter(
+    get_remote_address,
+    app=app,
+    default_limits=[]  # "200 per day", "50 per hour"
+)
+
 
 # Set up basic logging
 logging.basicConfig(level=logging.INFO)
+
+# TODO example for blocking the user from accessing a page if a previous step is not completed
+# @app.route('/merge_photo')
+# def merge_photo():
+#     # Simulate the merge photo step completion
+#     session['merge_photo_done'] = True
+#     return "Photo merged! Now you can upload it."
+#
+# @app.route('/upload_photo')
+# def upload_photo():
+#     # Ensure the user has merged the photo before uploading
+#     if not session.get('merge_photo_done'):
+#         return redirect(url_for('merge_photo'))
 
 
 @login_manager.user_loader
@@ -30,9 +52,11 @@ def load_user(user_id):
                     str(user_data['_id']))
     return None
 
+
 @app.route('/healthcheck')
 def healthcheck():
     return 'OK', 200
+
 
 @app.route('/')
 @login_required
@@ -55,13 +79,12 @@ def home():
 
     # Pass statistics to the template
     return render_template(
-        'index.html', 
-        wins=wins, 
-        losses=losses, 
-        total_games=total_games, 
+        'index.html',
+        wins=wins,
+        losses=losses,
+        total_games=total_games,
         win_percentage=win_percentage
     )
-
 
 
 @app.route('/sign-up', methods=['GET', 'POST'])
@@ -92,6 +115,7 @@ def sign_up():
 
 
 @app.route('/login', methods=['GET', 'POST'])
+@limiter.limit("5 per minute")
 def login():
     if request.method == 'POST':
         username = request.form['username']
@@ -466,6 +490,7 @@ def upload_image():
 
     return jsonify({"status": "waiting", "message": "Waiting for the other player to upload/select their image."})
 
+
 @app.route('/waiting-for-other')
 @login_required
 def waiting_for_other():
@@ -596,7 +621,6 @@ def cancel_game():
 
     # Find the game where the current user is one of the players
     game = mongo.db.games.find_one({"players": {"$in": [current_user.id]}})
-
 
     if game:
         game_id = game["_id"]  # Extract the ObjectId from the game document

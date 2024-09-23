@@ -3,9 +3,12 @@ from flask_pymongo import PyMongo
 from flask_bcrypt import Bcrypt
 from flask_login import LoginManager, current_user
 from gradio_client import Client
-import httpx  # Import httpx
+import httpx
 import os
 import logging
+
+from . import routes, api_routes
+
 logging.basicConfig(level=logging.INFO)
 
 app = Flask(__name__)
@@ -37,7 +40,6 @@ face_swap_client = Client(
 
 waiting_users_collection = mongo.db.waiting_users  # New collection for waiting users
 
-from . import routes, api_routes
 
 @app.context_processor
 def inject_user():
