@@ -3,21 +3,25 @@ import os
 import requests
 from flask import flash, redirect, url_for, render_template, request
 
-from . import app, mongo, bcrypt, login_manager
+from . import app, mongo, login_manager
 from flask_login import login_required
 from .models import User
 from bson.objectid import ObjectId
 
 import logging
+
 logging.basicConfig(level=logging.INFO)
 
 BASE_URL = 'http://face-merge-image-classification-api:6000'
+
 
 # Custom unauthorized handler
 @login_manager.unauthorized_handler
 def unauthorized():
     flash('Please log in to access this page.', 'danger')
     return redirect(url_for('login'))
+
+
 @login_manager.user_loader
 def load_user(user_id):
     user_data = mongo.db.users.find_one({"_id": ObjectId(user_id)})
@@ -25,7 +29,6 @@ def load_user(user_id):
         return User(user_data['username'], user_data['password'], user_data['wins'], user_data['losses'],
                     str(user_data['_id']))
     return None
-
 
 
 @app.route('/api/status')
@@ -49,6 +52,7 @@ def api_async_upload():
     if request.method == 'POST':
         return _post_request_to_api(request, 'async_upload')
     return render_template('api/async_upload.html')
+
 
 def _post_request_to_api(request_from_web, endpoint):
     assert request_from_web.method == 'POST'
@@ -78,6 +82,7 @@ def _post_request_to_api(request_from_web, endpoint):
         return response.json()
     else:
         return "No image provided", 400
+
 
 @app.route('/api/result', methods=['GET', 'POST'])
 @login_required
