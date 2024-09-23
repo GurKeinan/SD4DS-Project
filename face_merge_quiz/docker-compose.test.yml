@@ -39,7 +39,7 @@ services:
     depends_on:
       - mongodb
     volumes:
-      - ../image-classification-api:/app/app
+      - ../image_classification_api:/app
     env_file:
       - .env
     environment:
