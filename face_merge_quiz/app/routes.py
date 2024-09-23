@@ -12,18 +12,19 @@ import requests
 
 from flask import render_template, redirect, url_for, flash, request, jsonify, session
 from flask_login import login_user, logout_user, current_user, login_required
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 
 from . import app, mongo, bcrypt, login_manager, waiting_users_collection
 from .models import User
 from .utils import generate_game_code, fetch_photos_extended, save_base64_image, merge_images
 
-from flask_limiter import Limiter
-from flask_limiter.util import get_remote_address
 
 limiter = Limiter(
     get_remote_address,
     app=app,
-    default_limits=[]  # "200 per day", "50 per hour"
+    default_limits=[],  # "200 per day", "50 per hour"
+    storage_uri="memory://"
 )
 
 
@@ -74,7 +75,6 @@ def home():
         win_ratio = wins / total_games
         win_percentage = round(win_ratio * 100, 2)
     else:
-        win_ratio = 0
         win_percentage = 0
 
     # Pass statistics to the template
@@ -115,7 +115,7 @@ def sign_up():
 
 
 @app.route('/login', methods=['GET', 'POST'])
-@limiter.limit("5 per minute")
+@limiter.limit("1/second")
 def login():
     if request.method == 'POST':
         username = request.form['username']
