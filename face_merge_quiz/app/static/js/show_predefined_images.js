@@ -3,7 +3,8 @@ const predefinedImages = [
             'predefined-images/Idan.png',
             'predefined-images/Noam.png',
             'predefined-images/Ori.png',
-            'predefined-images/Stav.png'
+            'predefined-images/Stav.png',
+            'predefined-images/Itamar.jpg',
         ];
 
         // Function to dynamically load predefined images
