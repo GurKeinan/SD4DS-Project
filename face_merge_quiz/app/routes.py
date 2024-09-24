@@ -19,7 +19,6 @@ from . import app, mongo, bcrypt, login_manager, waiting_users_collection
 from .models import User
 from .utils import generate_game_code, fetch_photos_extended, save_base64_image, merge_images
 
-
 limiter = Limiter(
     get_remote_address,
     app=app,
@@ -27,22 +26,8 @@ limiter = Limiter(
     storage_uri="memory://"
 )
 
-
 # Set up basic logging
 logging.basicConfig(level=logging.INFO)
-
-# TODO example for blocking the user from accessing a page if a previous step is not completed
-# @app.route('/merge_photo')
-# def merge_photo():
-#     # Simulate the merge photo step completion
-#     session['merge_photo_done'] = True
-#     return "Photo merged! Now you can upload it."
-#
-# @app.route('/upload_photo')
-# def upload_photo():
-#     # Ensure the user has merged the photo before uploading
-#     if not session.get('merge_photo_done'):
-#         return redirect(url_for('merge_photo'))
 
 
 @login_manager.user_loader
@@ -181,6 +166,8 @@ def start_game():
 def waiting_room_created_game():
     print(f'User {current_user.id} is in the waiting room for a created game.')
     game_code = request.args.get('game_code')
+    if not game_code:
+        return "Error: Game code not provided.", 400  # CHECK
     return render_template('waiting_room_created_game.html', game_code=game_code)
 
 
@@ -219,7 +206,7 @@ def leave_created_game_waiting_room():
             session.pop('game_id', None)
             return jsonify({"message": "Game deleted successfully"}), 200
 
-    return jsonify({"message": "Game not found or already joined by another player"}), 404
+    return jsonify({"message": "Game not found or already joined by another player"}), 404  # CHECK TODO 400
 
 
 @app.route('/join-random-game')
@@ -296,7 +283,7 @@ def leave_random_waiting_room():
             mongo.db.games.delete_one({"_id": game["_id"]})
             return jsonify({"message": "User and associated game deleted"}), 200
 
-    return jsonify({"message": "User not found in waiting room or no game to delete"}), 404
+    return jsonify({"message": "User not found in waiting room or no game to delete"}), 404  # CHECK TODO 400
 
 
 @app.route('/check-random-game')
@@ -327,6 +314,10 @@ def check_random_game():
 @app.route('/waiting-room-random-game')
 @login_required
 def waiting_room_random_game():
+    # check in waiting_users_collection if the user is in the waiting room
+    waiting_user = waiting_users_collection.find_one({"user_id": current_user.id})  # CHECK
+    if not waiting_user:
+        return "Error: User not found in the waiting room.", 400
     print(f'User {current_user.id} is in the waiting room for a random game.')
     return render_template('waiting_room_random_game.html')
 
@@ -362,21 +353,29 @@ def enter_code():
     return render_template('enter_code.html')
 
 
-# TODO: remove?
-@app.route('/game-ready')
-@login_required
-def game_ready():
-    game_id = session.get('game_id')
-    if game_id:
-        game = mongo.db.games.find_one({"_id": ObjectId(game_id)})
-        if game:
-            return render_template('load_image.html', game=game)
-    return redirect(url_for('home'))
+# @app.route('/game-ready')
+# @login_required
+# def game_ready():
+#     game_id = session.get('game_id')
+#     if game_id:
+#         game = mongo.db.games.find_one({"_id": ObjectId(game_id)})
+#         if game:
+#             return render_template('load_image.html', game=game)
+#     return redirect(url_for('home'))
 
 
-@app.route('/load_image')
+@app.route('/load_image')  # CHECK TODO load-image
 @login_required
 def load_image():
+    if not session.get('game_id'):
+        return redirect(url_for('home'))
+    elif session.get('waiting-for-other') or session.get('show_merged_image'):
+        return redirect(url_for('home'))
+    else:
+        game = mongo.db.games.find_one({"_id": ObjectId(session['game_id'])})
+        if not game:
+            return redirect(url_for('home'))
+
     print(f'User {current_user.id} is trying to load an image.')
 
     # Get the list of predefined images
@@ -386,7 +385,7 @@ def load_image():
     return render_template('load_image.html', predefined_images=predefined_images)
 
 
-@app.route("/search_photos", methods=["POST"])
+@app.route("/search_photos", methods=["POST"])  # CHECK TODO search-photos
 def search_photos():
     data = request.get_json()
     query = data.get('query', '')
@@ -398,7 +397,7 @@ def search_photos():
     return jsonify({"photos": photo_urls})
 
 
-@app.route('/upload_image', methods=['POST'])
+@app.route('/upload_image', methods=['POST'])  # CHECK TODO upload-image
 @login_required
 def upload_image():
     file = request.files.get('file')
@@ -487,17 +486,25 @@ def upload_image():
 
         print(f"Images merged successfully. {merged_image_url=}")
         return jsonify({"status": "ready", "message": "Merged Photo is Ready", "merged_image_url": merged_image_url})
-
     return jsonify({"status": "waiting", "message": "Waiting for the other player to upload/select their image."})
 
 
 @app.route('/waiting-for-other')
 @login_required
-def waiting_for_other():
+def waiting_for_other():  # upload_image
+    # check if the user is in a game and he has uploaded an image
+    if not session.get('game_id'):  # CHECK
+        return "Error: No game ID found in the session.", 400
+    game = mongo.db.games.find_one({"_id": ObjectId(session['game_id'])})
+    if not game:
+        return "Error: Game not found.", 400
+    player_images = game.get("player_images", {})
+    if str(current_user.id) not in player_images:
+        return "Error: Player image not found.", 400
     return render_template('waiting_for_other_player_to_upload_image.html')
 
 
-@app.route('/check_merge_ready')
+@app.route('/check_merge_ready')  # CHECK TODO check-merge-ready
 @login_required
 def check_merge_ready():
     game = mongo.db.games.find_one({"_id": ObjectId(session['game_id'])})
@@ -511,14 +518,20 @@ def check_merge_ready():
     return jsonify({"status": "waiting", "message": "Still waiting for the other player."})
 
 
-@app.route('/show_merged_image')
+@app.route('/show_merged_image')  # CHECK TODO show-merged-image
 @login_required
 def show_merged_image():
+    # check merged ready
+
     # Retrieve the current game document from the database
     game = mongo.db.games.find_one({"_id": ObjectId(session['game_id'])})
 
-    # retrieve the url of the merged image
-    merged_image_url = game.get("merged_image")
+    if game:  # CHECK
+        merged_image_url = game.get("merged_image")
+        if not merged_image_url:
+            return "Error: Merged image not found.", 400
+    else:
+        return "Error: Game not found.", 400
 
     # Determine the opponent's ID based on the player ID
     if game['player1_id'] == current_user.id:
@@ -547,17 +560,25 @@ def show_merged_image():
     return render_template('guess_image.html', image_url=merged_image_url, options=options)
 
 
-@app.route('/submit_guess', methods=['POST'])
+@app.route('/submit_guess', methods=['POST'])  # CHECK TODO submit-guess
 @login_required
 def submit_guess():
     """
     Handles the guess submission, checks if the guess is correct, 
     and redirects the player with the result.
     """
-    guess = request.form.get('guess')
-
     # Retrieve game data
     game = mongo.db.games.find_one({"_id": ObjectId(session['game_id'])})
+
+    if not game:
+        return "Error: Game not found.", 400  # CHECK
+
+    if 'player1_id' not in game or 'player2_id' not in game or 'answers' not in game or 'player_images' not in game:
+        return "Error: Game data is incomplete.", 400  # CHECK
+
+    guess = request.form.get('guess')
+    if not guess:  # CHECK
+        return "Error: No guess provided.", 400
 
     if game['player1_id'] == current_user.id:
         opponent_id = game['player2_id']
@@ -587,6 +608,7 @@ def submit_guess():
                                               f'{game["player2_id"]}.jpg')
             if os.path.exists(player2_image_file):
                 os.remove(player2_image_file)
+        # CHECK TODO maybe check this in the if condition above? if 'merged_image' not in game we have a problem
         if 'merged_image' in game:
             merged_image_file = os.path.join(app.config['OUTPUT_FOLDER'],
                                              f'{game["_id"]}.jpg')
@@ -605,16 +627,21 @@ def submit_guess():
         return redirect(url_for('game_result', result='lose'))
 
 
-@app.route('/game_result/<result>')
+@app.route('/game_result/<result>')  # CHECK TODO game-result
 @login_required
 def game_result(result):
     """
     Displays the result of the game (win/lose).
     """
+    # CHECK TODO we need a check here to see if there was really a game?
+    #  The game itself already deleted.
+    #  Maybe delete the game in this function
+
+    # CHECK TODO add a check that result is either 'win' or 'lose'
     return render_template('game_result.html', result=result)
 
 
-@app.route('/cancel_game', methods=['POST'])
+@app.route('/cancel_game', methods=['POST'])  # CHECK TODO cancel-game
 @login_required
 def cancel_game():
     print(f'User {current_user.id} is trying to cancel the game.')
@@ -634,10 +661,11 @@ def cancel_game():
 
         return jsonify({'status': 'canceled'})
 
+    # CHECK TODO in case of error, we return json like this or a text like in row 561?
     return jsonify({'error': 'Game not found'}), 400
 
 
-@app.route('/check_game_status', methods=['GET'])
+@app.route('/check_game_status', methods=['GET'])  # CHECK TODO check-game-status
 @login_required
 def check_game_status():
     game = mongo.db.games.find_one({"players": {"$in": [current_user.id]}})
@@ -651,7 +679,8 @@ def check_game_status():
     return jsonify({'status': 'active'})
 
 
-@app.route('/game_cancelled')
+@app.route('/game_cancelled')  # CHECK TODO game-cancelled
 @login_required
 def game_cancelled():
+    # CHECK TODO is there a relevant check here?
     return render_template('game_cancelled.html')
