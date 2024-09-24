@@ -10,9 +10,9 @@ import logging
 logging.basicConfig(level=logging.INFO)
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'your_secret_key'  # TODO change this
+app.config['SECRET_KEY'] = 'your_secret_key2'
 app.config['MONGO_URI'] = os.environ.get('MONGO_URI')  # MongoDB URI
-# app.config['FLASK_ENV'] = os.environ.get('FLASK_ENV')  # TODO: we need this?
+# app.config['FLASK_ENV'] = os.environ.get('FLASK_ENV')
 app.config['UPLOAD_FOLDER'] = 'app/static/uploads/'
 app.config['OUTPUT_FOLDER'] = 'app/static/outputs/'
 

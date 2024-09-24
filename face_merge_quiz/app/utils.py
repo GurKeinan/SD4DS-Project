@@ -41,11 +41,11 @@ def fetch_photos(query, prefix='', suffix='', start_index=1):
     links = [item['link'] for item in data.get('items', [])]
     alts = [item.get('title', '') for item in data.get('items', [])]
     photos_sizes = [(item['image']['height'], item['image']['width']) for item in data.get('items', [])]
-    # Print image URLs from the first page  TODO more pages?
+    # Print image URLs from the first page
     return links, alts, photos_sizes
 
 
-def fetch_photos_extended(query, amount=10, check_size=False, prefix='', suffix='portrait'):  # TODO portrait of?
+def fetch_photos_extended(query, amount=10, check_size=False, prefix='', suffix='portrait'):
     current_amount = 0
     start_index = 1
     photo_urls = []

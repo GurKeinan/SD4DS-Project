@@ -173,7 +173,7 @@ def upload_image():
 
     file = request.files['image']
 
-    if file.filename == '':  # TODO: indeed?
+    if file.filename == '':
         sync_job_counters.update_one({'_id': 'counters'}, {'$inc': {'error_count': 1}})
         return jsonify({'error': {'code': 400, 'message': 'No selected file'}}), 400
 
@@ -189,7 +189,7 @@ def upload_image():
 
             sync_job_counters.update_one({'_id': 'counters'}, {'$inc': {'running_count': -1, 'success_count': 1}})
             return jsonify({'matches': matches}), 200
-        except Exception as e:
+        except Exception:
             # Update counters: decrement running, increment error
             sync_job_counters.update_one({'_id': 'counters'}, {'$inc': {'running_count': -1, 'error_count': 1}})
             return jsonify({'error': {'code': 500, 'message': 'An error occurred during processing'}}), 500
@@ -281,7 +281,7 @@ def get_result(request_id):
         return jsonify({
             'status': 'error',
             'error': request_data['error']
-        }), 200  # CHECK: should it be 500?
+        }), 500
 
     print('This should not happen' + 'n' * 100)
 
@@ -289,10 +289,13 @@ def get_result(request_id):
 @app.route('/status', methods=['GET'])
 def get_status():
     processed = {
-                                                                # async + sync
-        'success': db.requests.count_documents({'status': 'completed'}) + db.counters.find_one({'_id': 'counters'})['success_count'],
-        'fail': db.requests.count_documents({'status': 'error'}) + db.counters.find_one({'_id': 'counters'})['error_count'],
-        'running': db.requests.count_documents({'status': 'running'}) + db.counters.find_one({'_id': 'counters'})['running_count'],
+        # async + sync
+        'success': db.requests.count_documents({'status': 'completed'}) +
+                   db.counters.find_one({'_id': 'counters'})['success_count'],
+        'fail': db.requests.count_documents({'status': 'error'}) +
+                db.counters.find_one({'_id': 'counters'})['error_count'],
+        'running': db.requests.count_documents({'status': 'running'}) +
+                   db.counters.find_one({'_id': 'counters'})['running_count'],
         'queued': 0  # we did not implement a queue
     }
 
