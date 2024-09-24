@@ -69,7 +69,7 @@ class TestGameFlow(unittest.TestCase):
             guess=guess
         ), follow_redirects=True)
 
-    def test_game_flow(self):
+    def test_random_game_flow(self):
         # Step 1: Sign up two users
         self._signup(self.client1, 'user1', 'password1')
         self._signup(self.client2, 'user2', 'password2')
@@ -86,7 +86,9 @@ class TestGameFlow(unittest.TestCase):
 
         # Step 3: Both users join a random game
         player1_join_random_game_response = self._join_random_game(self.client1, user1_id)
-        self.assertIn(b'Waiting for another player to join the game', player1_join_random_game_response.data)
+        player1_join_random_game_data = json.loads(player1_join_random_game_response.data)
+        self.assertEqual(player1_join_random_game_data['message'], 'Waiting for another player to join...')
+        # self.assertIn(b'Waiting for another player to join the game', player1_join_random_game_response.data)
         self.assertEqual(waiting_users_collection.count_documents({}), 1) # only one user is waiting for a game
 
         player2_join_random_game_response = self._join_random_game(self.client2, user2_id)

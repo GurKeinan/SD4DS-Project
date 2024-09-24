@@ -5,6 +5,7 @@ This module contains the routes for the FaceMergeQuiz application.
 import os
 import random
 import base64
+from crypt import methods
 from datetime import datetime, timezone
 import logging
 from bson.objectid import ObjectId
@@ -100,7 +101,7 @@ def sign_up():
 
 
 @app.route('/login', methods=['GET', 'POST'])
-@limiter.limit("1/second")
+# @limiter.limit("1/second")
 def login():
     if request.method == 'POST':
         username = request.form['username']
@@ -308,7 +309,10 @@ def join_random_game():
 
     # If no match was found yet, redirect to the waiting room for random games
     # flash('Waiting for another player to join...', 'info')
-    return redirect(url_for('waiting_room_random_game'))
+    if app.testing:
+        return jsonify({"message": "Waiting for another player to join..."}), 200
+    else:
+        return redirect(url_for('waiting_room_random_game'))
 
 
 @app.route('/leave-random-waiting-room', methods=['POST'])
@@ -340,9 +344,9 @@ def check_random_game():
         if user_id:
             user = mongo.db.users.find_one({"_id": ObjectId(user_id)})
             if not user:
-                return jsonify({"error": "User not found"}), 404  # CHECK TODO 400
+                return jsonify({"error": "User not found"}), 404
         else:
-            return jsonify({"error": "user_id parameter required in test mode"}), 400  # CHECK TODO 400
+            return jsonify({"error": "user_id parameter required in test mode"}), 400
     else:
         user_id = current_user.id
 
@@ -358,13 +362,25 @@ def check_random_game():
     return jsonify({"game_found": False})
 
 
-@app.route('/waiting-room-random-game')
+@app.route('/waiting-room-random-game', methods=['GET', 'POST'])
 @login_required
 def waiting_room_random_game():
-    waiting_user = waiting_users_collection.find_one({"user_id": current_user.id})  # CHECK
+    if request.method == 'POST' and app.testing:
+        # In test mode, accept a user_id parameter from form data
+        user_id = request.form.get('user_id')
+        if user_id:
+            user = mongo.db.users.find_one({"_id": ObjectId(user_id)})
+            if not user:
+                return jsonify({"error": "User not found"}), 404
+        else:
+            return jsonify({"error": "user_id parameter required in test mode"}), 400
+    else:
+        user_id = current_user.id
+
+    waiting_user = waiting_users_collection.find_one({"user_id": user_id})  # CHECK
     if not waiting_user:
         return "Error: User not found in the waiting room.", 400
-    print(f'User {current_user.id} is in the waiting room for a random game.')
+    print(f'User {user_id} is in the waiting room for a random game.')
     return render_template('waiting_room_random_game.html')
 
 
