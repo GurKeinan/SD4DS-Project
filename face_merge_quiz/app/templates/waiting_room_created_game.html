@@ -62,7 +62,7 @@
                 .then(data => {
                     if (data.game_found) {
                         isWellBehavedNavigation = true; // Set the flag to true when navigating to game
-                        window.location.href = "/game-ready";
+                        window.location.href = "/load_image";
                     } else {
                         setTimeout(checkForGame, 3000);  // Poll again after 3 seconds
                     }

@@ -140,3 +140,97 @@ class TestGameFlow(unittest.TestCase):
 
         # Verify that the game has been deleted after completion
         self.assertEqual(mongo.db.games.count_documents({}), 0)
+
+    def _create_game(self, client: FlaskClient, user_id):
+        return client.post('/start-game', data={'user_id': user_id}, follow_redirects=True)
+
+    def _waiting_room_created_game(self, client: FlaskClient, user_id, game_code):
+        return client.post('/waiting-room-created-game', data={'user_id': user_id, 'game_code': game_code},
+                           follow_redirects=True)
+
+    def _check_created_game(self, client: FlaskClient, user_id, game_code):
+        return client.post('/check-created-game', data={'user_id': user_id, 'game_code': game_code},
+                           follow_redirects=True)
+
+    def _join_created_game(self, client: FlaskClient, user_id, game_code):
+        return client.post('/enter-code', data={'user_id': user_id, 'gameCode': game_code}, follow_redirects=True)
+
+    def test_created_game_flow(self):
+        # Sign up two users
+        self._signup(self.client1, 'user1', 'password1')
+        self._signup(self.client2, 'user2', 'password2')
+        self.assertEqual(mongo.db.users.count_documents({}), 2)
+
+        # Log in both users
+        self._login(self.client1, 'user1', 'password1')
+        self._login(self.client2, 'user2', 'password2')
+
+        user1_id = str(mongo.db.users.find_one({'username': 'user1'})['_id'])
+        user2_id = str(mongo.db.users.find_one({'username': 'user2'})['_id'])
+
+        # User1 creates a game
+        create_game_response = self._create_game(self.client1, user1_id)
+        create_game_data = json.loads(create_game_response.data)
+        self.assertEqual(create_game_data['status'], 'waiting')
+
+        # Extract the game code from the response
+        game_code = create_game_data['game_code']
+        print(f'GAME CODE: {game_code}')
+
+        # User2 joins the created game
+        join_game_response = self._join_created_game(self.client2, user2_id, game_code)
+        self.assertIn(b'Upload a Photo or Choose a Predefined One', join_game_response.data)
+        print(f'FOUND GAME WITH CODE: {game_code}')
+
+        # check that a game with the given code, ids and ready status exists in the database
+        game = mongo.db.games.find_one({'game_code': game_code,
+                                        'player1_id': user1_id,
+                                        'player2_id': user2_id,
+                                        'status': 'ready'})
+        self.assertIsNotNone(game)
+
+        # User1 checks if the game is ready
+        print(f'CHECKING GAME WITH CODE: {game_code}')
+        check_game_response = self._check_created_game(self.client1, user1_id, game_code)
+        check_game_data = json.loads(check_game_response.data)
+        self.assertTrue(check_game_data['game_found'])
+
+        # Verify that a game exists in the database
+        game = mongo.db.games.find_one({'game_code': game_code})
+        self.assertIsNotNone(game)
+        self.assertEqual(game['player1_id'], user1_id)
+        self.assertEqual(game['player2_id'], user2_id)
+
+        # Both users upload images and answers
+        response1 = self._upload_image_and_answers(
+            self.client1, str(game['_id']), user1_id, 'Britney.png', 'Britney', 'Rihanna', 'Beyonce')
+        response2 = self._upload_image_and_answers(
+            self.client2, str(game['_id']), user2_id, 'Rihanna.png', 'Rihanna', 'Britney', 'Beyonce')
+
+        # Parse the JSON responses
+        data1 = json.loads(response1.data)
+        data2 = json.loads(response2.data)
+
+        self.assertEqual(data1['status'], 'waiting')
+        self.assertEqual(data2['status'], 'ready')
+
+        # Wait for the merged image to be created
+        time.sleep(15)
+
+        # Both users make guesses
+        response1 = self._make_guess(self.client1, str(game['_id']), user1_id, 'Rihanna')
+        response2 = self._make_guess(self.client2, str(game['_id']), user2_id, 'Beyonce')
+
+        self.assertIn(b'You Win!', response1.data)
+        self.assertIn(b'You Lose!', response2.data)
+
+        # Verify game results in the database
+        user1 = mongo.db.users.find_one({'username': 'user1'})
+        user2 = mongo.db.users.find_one({'username': 'user2'})
+        self.assertEqual(user1['wins'], 1)
+        self.assertEqual(user1['losses'], 0)
+        self.assertEqual(user2['wins'], 0)
+        self.assertEqual(user2['losses'], 1)
+
+        # Verify that the game has been deleted after completion
+        self.assertEqual(mongo.db.games.count_documents({}), 0)

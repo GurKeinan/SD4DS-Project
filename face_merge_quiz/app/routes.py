@@ -149,12 +149,24 @@ def join_game():
     return render_template('join_game.html')
 
 
-@app.route('/start-game')
+@app.route('/start-game', methods=['POST', 'GET'])
 @login_required
 def start_game():
-    print(f'User {current_user.id} is trying to start a game.')
+    if request.method == 'POST' and app.testing:
+        # In test mode, accept a user_id parameter from the query string
+        user_id = request.form.get('user_id')
+        if user_id:
+            user = mongo.db.users.find_one({"_id": ObjectId(user_id)})
+            if not user:
+                return jsonify({"error": "User not found"}), 404
+        else:
+            return jsonify({"error": "user_id parameter required in test mode"}), 400
+    else:
+        user_id = current_user.id
+
+    print(f'User {user_id} is trying to start a game.')
     # if there is a game created by the user in the database, delete it
-    game = mongo.db.games.find_one({"player1_id": current_user.id})
+    game = mongo.db.games.find_one({"player1_id": user_id})
     if game:
         mongo.db.games.delete_one({"_id": game["_id"]})
     # Generate a unique game code
@@ -163,17 +175,20 @@ def start_game():
     # Store the game in the database with the first player (current user)
     game_id = mongo.db.games.insert_one({
         "game_code": game_code,
-        "player1_id": current_user.id,
+        "player1_id": user_id,
         "player2_id": None,
         "status": "waiting",
         "private": True,  # Since it's a code-based game, it's private by default
         "created_at": datetime.now(timezone.utc),
-        "players": [current_user.id]
+        "players": [user_id]
     }).inserted_id
 
-    # Store the game ID in the session and redirect to the waiting room for created games
-    session['game_id'] = str(game_id)
-    return redirect(url_for('waiting_room_created_game', game_code=game_code))
+    if app.testing:
+        return jsonify({"status": "waiting", "game_id": str(game_id), "game_code": game_code})
+    else:
+        # Store the game ID in the session and redirect to the waiting room for created games
+        session['game_id'] = str(game_id)
+        return redirect(url_for('waiting_room_created_game', game_code=game_code))
 
 
 @app.route('/waiting-room-created-game')
@@ -184,20 +199,38 @@ def waiting_room_created_game():
     return render_template('waiting_room_created_game.html', game_code=game_code)
 
 
-@app.route('/check-created-game')
+@app.route('/check-created-game', methods=['GET', 'POST'])
 @login_required
 def check_created_game():
-    # search for a game in which this player is the first player
-    game_code = request.args.get('game_code')
+    if request.method == 'POST' and app.testing:
+        # In test mode, accept a user_id parameter from form data
+        user_id = request.form.get('user_id')
+        game_code = request.form.get('game_code')
+        if user_id:
+            user = mongo.db.users.find_one({"_id": ObjectId(user_id)})
+            if not user:
+                return jsonify({"error": "User not found"}), 404
+        else:
+            return jsonify({"error": "user_id parameter required in test mode"}), 400
+
+        if game_code:
+            game_id = mongo.db.games.find_one({"player1_id": user_id, "status": "ready",
+                                                "game_code": game_code})
+            if not game_id:
+                return jsonify({"game_found": False})
+        else:
+            return jsonify({"error": "game_code parameter required in test mode"}), 400
+
+    else:
+        user_id = current_user.id
+        # search for a game in which this player is the first player
+        game_code = request.args.get('game_code')
+
     print(f'Checking for game with code {game_code}')
-    game_id = mongo.db.games.find_one({"player1_id": current_user.id, "status": "ready",
+    game_id = mongo.db.games.find_one({"player1_id": user_id, "status": "ready",
                                        "game_code": game_code})
     if game_id:
         session['game_id'] = str(game_id['_id'])
-        # delete this user from the waiting users collection
-        waiting_users_collection.delete_one({"user_id": current_user.id})
-        print(f'The size of the waiting users collection is \
-              {waiting_users_collection.count_documents({})}')
         return jsonify({"game_found": True})
 
     return jsonify({"game_found": False})
@@ -349,19 +382,31 @@ def waiting_room_random_game():
 @login_required
 def enter_code():
     if request.method == 'POST':
-        print(f'User {current_user.id} is trying to enter a game code.')
+        if app.testing:
+            # In test mode, accept a user_id parameter from form data
+            user_id = request.form.get('user_id')
+            if user_id:
+                user = mongo.db.users.find_one({"_id": ObjectId(user_id)})
+                if not user:
+                    return jsonify({"error": "User not found"}), 404
+            else:
+                return jsonify({"error": "user_id parameter required in test mode"}), 400
+        else:
+            user_id = current_user.id
+
+        print(f'User {user_id} is trying to enter a game code.')
         game_code = request.form['gameCode']
 
         # Look for the game in the database using the provided code
         game = mongo.db.games.find_one({"game_code": game_code, "player2_id": None})
 
         if game:
-            print(f'User {current_user.id} joined game with code {game_code}.')
+            print(f'User {user_id} joined game with code {game_code}.')
             # Pair the user with the game
             mongo.db.games.update_one(
                 {"_id": game["_id"]},
-                {"$set": {"player2_id": current_user.id, "status": "ready"},
-                 "$push": {"players": current_user.id}}
+                {"$set": {"player2_id": user_id, "status": "ready"},
+                 "$push": {"players": user_id}}
             )
 
             # Redirect both players to the game ready page
@@ -369,24 +414,11 @@ def enter_code():
             return redirect(url_for('load_image'))
 
         else:
-            print(f'User {current_user.id} entered an invalid game code.')
+            print(f'User {user_id} entered an invalid game code.')
             flash('Invalid or already used game code. Please try again.', 'danger')
             return redirect(url_for('enter_code'))
 
     return render_template('enter_code.html')
-
-
-# TODO: remove?
-@app.route('/game-ready')
-@login_required
-def game_ready():
-    game_id = session.get('game_id')
-    if game_id:
-        game = mongo.db.games.find_one({"_id": ObjectId(game_id)})
-        if game:
-            return render_template('load_image.html', game=game)
-    return redirect(url_for('home'))
-
 
 @app.route('/load_image')
 @login_required
