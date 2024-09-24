@@ -3,6 +3,7 @@ This module contains the routes for the FaceMergeQuiz application.
 """
 # TODO: generally, check that there isn't a way to not follow the right page order (using http\the browser back button)
 # TODO: regulate the error messages and the status codes: "Game not found" and "No active game found"
+# TODO: state GET or POST or both for each route
 import os
 import random
 import base64
