@@ -101,7 +101,7 @@ def sign_up():
 
 
 @app.route('/login', methods=['GET', 'POST'])
-# @limiter.limit("1/second")
+@limiter.limit("1/second")
 def login():
     if request.method == 'POST':
         username = request.form['username']
