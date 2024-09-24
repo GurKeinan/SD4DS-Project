@@ -1,5 +1,6 @@
 import unittest
-from app import app
+from app import app, mongo
+
 
 class TestLogin(unittest.TestCase):
 
@@ -8,15 +9,21 @@ class TestLogin(unittest.TestCase):
         cls.app = app  # Create the app
         cls.client = cls.app.test_client()  # Create a test client
         cls.app.testing = True
+        print('setUpClass TestLogin')
 
     def setUp(self):
         # Push an application context
         self.app_context = self.app.app_context()
         self.app_context.push()
 
+        # Clear the users collection before each test
+        with self.app.app_context():
+            mongo.db.users.delete_many({})
+
     def tearDown(self):
         # Pop the application context
         self.app_context.pop()
+        print('tearDown TestLogin')
 
     def _login(self, username, password):
         return self.client.post('/login', data=dict(

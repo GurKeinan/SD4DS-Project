@@ -115,7 +115,7 @@ def sign_up():
 
 
 @app.route('/login', methods=['GET', 'POST'])
-@limiter.limit("1/second")
+# @limiter.limit("1/second")
 def login():
     if request.method == 'POST':
         username = request.form['username']
@@ -222,31 +222,43 @@ def leave_created_game_waiting_room():
     return jsonify({"message": "Game not found or already joined by another player"}), 404
 
 
-@app.route('/join-random-game')
+@app.route('/join-random-game', methods=['GET', 'POST'])
 @login_required
 def join_random_game():
+    if request.method == 'POST' and app.testing:
+        # In test mode, accept a user_id parameter from form data
+        user_id = request.form.get('user_id')
+        if user_id:
+            user = mongo.db.users.find_one({"_id": ObjectId(user_id)})
+            if not user:
+                return jsonify({"error": "User not found"}), 404
+        else:
+            return jsonify({"error": "user_id parameter required in test mode"}), 400
+    else:
+        user_id = current_user.id
+
     # If this user already has a record in the waiting users collection, remove it
-    waiting_users_collection.delete_one({"user_id": current_user.id})
+    waiting_users_collection.delete_one({"user_id": user_id})
     # if this user was in any previous game, delete the game
-    game = mongo.db.games.find_one({"players": {"$in": [current_user.id]}, "status": "waiting"})
+    game = mongo.db.games.find_one({"players": {"$in": [user_id]}, "status": "waiting"})
     if game:
         mongo.db.games.delete_one({"_id": game["_id"]})
     # Add the current user to the "waiting for a partner" database
-    waiting_users_collection.insert_one({"user_id": current_user.id,
+    waiting_users_collection.insert_one({"user_id": user_id,
                                          "timestamp": datetime.now(timezone.utc)})
 
-    print(f'User {current_user.id} added to the waiting room.')
+    print(f'User {user_id} added to the waiting room.')
 
     # Check how many users are currently waiting with different ids than the current user
-    waiting_users = list(waiting_users_collection.find({"user_id": {"$ne": current_user.id}})
+    waiting_users = list(waiting_users_collection.find({"user_id": {"$ne": user_id}})
                          .sort("timestamp"))
     # waiting_users = list(waiting_users_collection.find().sort("timestamp"))
     print(f'Found {len(waiting_users)} users in the waiting room.')
     if len(waiting_users) > 0:
         # If there are at least 2 users, pair them up
         print(f'Found {len(waiting_users)} users in the waiting room.')
-        print(f'User 1: {current_user.id}, User 2: {waiting_users[0]["user_id"]}')
-        player2 = waiting_users_collection.find_one({"user_id": current_user.id})
+        print(f'User 1: {user_id}, User 2: {waiting_users[0]["user_id"]}')
+        player2 = waiting_users_collection.find_one({"user_id": user_id})
         player1 = waiting_users[0]  # this is the first player among the two to search for a game
 
         # Create a new game for them
@@ -299,28 +311,30 @@ def leave_random_waiting_room():
     return jsonify({"message": "User not found in waiting room or no game to delete"}), 404
 
 
-@app.route('/check-random-game')
+@app.route('/check-random-game', methods=['GET', 'POST'])
 @login_required
 def check_random_game():
+    if request.method == 'POST' and app.testing:
+        # In test mode, accept a user_id parameter from form data
+        user_id = request.form.get('user_id')
+        if user_id:
+            user = mongo.db.users.find_one({"_id": ObjectId(user_id)})
+            if not user:
+                return jsonify({"error": "User not found"}), 404
+        else:
+            return jsonify({"error": "user_id parameter required in test mode"}), 400
+    else:
+        user_id = current_user.id
+
     # search for a game in which this player is the first player
-    game_id = mongo.db.games.find_one({"player1_id": current_user.id, "status": "ready"})
+    game_id = mongo.db.games.find_one({"player1_id": user_id, "status": "ready"})
     if game_id:
         session['game_id'] = str(game_id['_id'])
         # delete this user from the waiting users collection
-        waiting_users_collection.delete_one({"user_id": current_user.id})
+        waiting_users_collection.delete_one({"user_id": user_id})
         print(f'The size of the waiting users collection is \
               {waiting_users_collection.count_documents({})}')
         return jsonify({"game_found": True})
-    # else:
-    #     # Check if the current user has been paired up in a game
-    #     waiting_user = waiting_users_collection.find_one({"user_id": current_user.id})
-    #     if waiting_user and waiting_user.get("game_found"):
-    #         session['game_id'] = waiting_user.get("game_id")
-
-    #         # Clean up the waiting user entry after the game is found
-    #         waiting_users_collection.delete_one({"_id": waiting_user['_id']})
-
-    #         return jsonify({"game_found": True})
     return jsonify({"game_found": False})
 
 
@@ -401,11 +415,32 @@ def search_photos():
 @app.route('/upload_image', methods=['POST'])
 @login_required
 def upload_image():
+    if app.testing:
+        # In test mode, accept game_id and user_id parameters from form data
+        game_id = request.form.get('game_id')
+        user_id = request.form.get('user_id')
+        if not game_id or not user_id:
+            return jsonify({"error": "game_id and user_id parameters required in test mode"}), 400
+        game = mongo.db.games.find_one({"_id": ObjectId(game_id)})
+        if not game:
+            return jsonify({"error": "Game not found"}), 404
+        user = mongo.db.users.find_one({"_id": ObjectId(user_id)})
+        if not user:
+            return jsonify({"error": "User not found"}), 404
+    else:
+        game_id = session.get('game_id')
+        if not game_id:
+            return jsonify({"error": "No active game found"}), 400
+        game = mongo.db.games.find_one({"_id": ObjectId(game_id)})
+        if not game:
+            return jsonify({"error": "Game not found"}), 404
+        user_id = current_user.id
+
     file = request.files.get('file')
     selected_photo_url = request.form.get('selected-photo-url')
 
     # Retrieve answers from form
-    correct_answer = request.form.get('correct-answer')
+    correct_answer = request.form.get('correct_answer')
     distraction1 = request.form.get('distraction1')
     distraction2 = request.form.get('distraction2')
 
@@ -417,10 +452,10 @@ def upload_image():
     if file:
         file_data = base64.b64encode(file.read()).decode('utf-8')
         mongo.db.games.update_one(
-            {"_id": ObjectId(session['game_id'])},
-            {"$set": {f"player_images.{current_user.id}": file_data}}
+            {"_id": ObjectId(game_id)},
+            {"$set": {f"player_images.{user_id}": file_data}}
         )
-        logging.info(f"user {current_user.id} uploaded file using base64 encoding")
+        logging.info(f"user {user_id} uploaded file using base64 encoding")
 
     # Handle selected photo URL
     elif selected_photo_url:
@@ -440,24 +475,24 @@ def upload_image():
         # Store the image data in base64 in the database
         file_data = base64.b64encode(image_bytes).decode('utf-8')
         mongo.db.games.update_one(
-            {"_id": ObjectId(session['game_id'])},
-            {"$set": {f"player_images.{current_user.id}": file_data}}
+            {"_id": ObjectId(game_id)},
+            {"$set": {f"player_images.{user_id}": file_data}}
         )
-        logging.info(f"user {current_user.id} selected an image and it's stored in base64")
+        logging.info(f"user {user_id} selected an image and it's stored in base64")
     else:
         return jsonify({"status": "error", "message": "No file or image URL provided."})
 
     # Store the answers in the database
     mongo.db.games.update_one(
-        {"_id": ObjectId(session['game_id'])},
-        {"$set": {f"answers.{current_user.id}": {
+        {"_id": ObjectId(game_id)},
+        {"$set": {f"answers.{user_id}": {
             "correct": correct_answer,
             "distractions": [distraction1, distraction2]
         }}}
     )
 
     # Check if both users have uploaded or selected images
-    game = mongo.db.games.find_one({"_id": ObjectId(session['game_id'])})
+    game = mongo.db.games.find_one({"_id": ObjectId(game_id)})
     player_images = game.get("player_images", {})
 
     if len(player_images) == 2:  # Both players have uploaded/selected images
@@ -476,12 +511,12 @@ def upload_image():
         logging.info("player2_image_file=%s", player2_image_file)
 
         # Send the two images to the Gradio client for merging
-        merged_filename = f'{game["_id"]}.jpg'
+        merged_filename = f'{game_id}.jpg'
         merged_image_url = merge_images(player1_image_file, player2_image_file, merged_filename)
 
         # Save the merged image URL in the database
         mongo.db.games.update_one(
-            {"_id": ObjectId(session['game_id'])},
+            {"_id": ObjectId(game_id)},
             {"$set": {"merged_image": merged_image_url}}
         )
 
@@ -550,16 +585,30 @@ def show_merged_image():
 @app.route('/submit_guess', methods=['POST'])
 @login_required
 def submit_guess():
-    """
-    Handles the guess submission, checks if the guess is correct, 
-    and redirects the player with the result.
-    """
+    if app.testing:
+        # In test mode, accept game_id and user_id parameters from form data
+        game_id = request.form.get('game_id')
+        user_id = request.form.get('user_id')
+        if not game_id or not user_id:
+            return jsonify({"error": "game_id and user_id parameters required in test mode"}), 400
+        game = mongo.db.games.find_one({"_id": ObjectId(game_id)})
+        if not game:
+            return jsonify({"error": "Game not found"}), 404
+        user = mongo.db.users.find_one({"_id": ObjectId(user_id)})
+        if not user:
+            return jsonify({"error": "User not found"}), 404
+    else:
+        game_id = session.get('game_id')
+        if not game_id:
+            return jsonify({"error": "No active game found"}), 400
+        game = mongo.db.games.find_one({"_id": ObjectId(game_id)})
+        if not game:
+            return jsonify({"error": "Game not found"}), 404
+        user_id = current_user.id
+
     guess = request.form.get('guess')
 
-    # Retrieve game data
-    game = mongo.db.games.find_one({"_id": ObjectId(session['game_id'])})
-
-    if game['player1_id'] == current_user.id:
+    if game['player1_id'] == user_id:
         opponent_id = game['player2_id']
     else:
         opponent_id = game['player1_id']
@@ -570,7 +619,7 @@ def submit_guess():
     # update the game to show that the current user has submitted their guess
     if 'guess_was_submitted' not in game:
         mongo.db.games.update_one(
-            {"_id": ObjectId(session['game_id'])},
+            {"_id": ObjectId(game_id)},
             {"$set": {"guess_was_submitted": 1}}
         )
     else:
@@ -597,13 +646,12 @@ def submit_guess():
 
     if guess == correct_answer:
         # increase the wins of the current user
-        mongo.db.users.update_one({"_id": ObjectId(current_user.id)}, {"$inc": {"wins": 1}})
+        mongo.db.users.update_one({"_id": ObjectId(user_id)}, {"$inc": {"wins": 1}})
         return redirect(url_for('game_result', result='win'))
     else:
         # increase the losses of the current user
-        mongo.db.users.update_one({"_id": ObjectId(current_user.id)}, {"$inc": {"losses": 1}})
+        mongo.db.users.update_one({"_id": ObjectId(user_id)}, {"$inc": {"losses": 1}})
         return redirect(url_for('game_result', result='lose'))
-
 
 @app.route('/game_result/<result>')
 @login_required

@@ -87,8 +87,8 @@
             <p class="lead">The first answer should be the correct name, and the other two should be distractions.</p>
 
             <div class="form-group">
-                <label for="correct-answer">Correct Answer (Name of the Person in the Picture):</label>
-                <input type="text" class="form-control" id="correct-answer" name="correct-answer" placeholder="Enter the correct name" required>
+                <label for="correct_answer">Correct Answer (Name of the Person in the Picture):</label>
+                <input type="text" class="form-control" id="correct_answer" name="correct_answer" placeholder="Enter the correct name" required>
             </div>
 
             <div class="form-group">
@@ -300,11 +300,11 @@
             }
 
             // Add the answers to the form data
-            const correctAnswer = document.getElementById('correct-answer').value;
+            const correctAnswer = document.getElementById('correct_answer').value;
             const distraction1 = document.getElementById('distraction1').value;
             const distraction2 = document.getElementById('distraction2').value;
 
-            formData.append('correct-answer', correctAnswer);
+            formData.append('correct_answer', correctAnswer);
             formData.append('distraction1', distraction1);
             formData.append('distraction2', distraction2);
 

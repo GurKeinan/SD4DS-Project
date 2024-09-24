@@ -4,28 +4,26 @@ services:
     build: .
     container_name: face-merge-web
     ports:
-      - "5001:5000"  # Maps port 5000 inside the container to port 5001 on your host machine
+      - "5001:5000"
     networks:
       - face-merge-net
     depends_on:
       - mongodb
     volumes:
-      - .:/app  # Maps the app directory to the container's working directory
-      # TODO: delete the above line before submitting
+      - .:/app
     env_file:
-      - .env  # Default .env file for regular mode
+      - .env
     environment:
       - FLASK_ENV=testing
-      - MONGO_URI=mongodb://face-merge-mongodb:27017/testdb  # Note that it is testdb and not db.
-      # The above line is the same mongo instance as in docker-compose.yml, but a different database
-    command: ["python", "-m", "tests.test_login"]
+      - MONGO_URI=mongodb://face-merge-mongodb:27017/testdb
+    command: ["python", "-m", "unittest", "discover", "-v", "-s", "tests"]
 
   mongodb:
     image: mongo
     container_name: face-merge-mongodb
     volumes: []
     tmpfs:
-      - /data/db  # Store data in memory for test mode to prevent persistence
+      - /data/db
     networks:
       - face-merge-net
 
@@ -44,13 +42,10 @@ services:
       - .env
     environment:
       - MONGO_URI=mongodb://face-merge-mongodb:27017/api_db
-      # in the above line, api_db is the name of the database
       - GUNICORN_WORKERS=7
 
-
 volumes:
-  mongo-data: null  # This removes the volume definition for tests
+  mongo-data: null
 
 networks:
   face-merge-net:
-
