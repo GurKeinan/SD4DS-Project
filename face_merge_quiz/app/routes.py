@@ -220,9 +220,9 @@ def join_random_game():
         if user_id:
             user = mongo.db.users.find_one({"_id": ObjectId(user_id)})
             if not user:
-                return jsonify({"error": "User not found"}), 404
+                return jsonify({"error": "User not found"}), 404  # CHECK TODO 400
         else:
-            return jsonify({"error": "user_id parameter required in test mode"}), 400
+            return jsonify({"error": "user_id parameter required in test mode"}), 400  # CHECK TODO 400
     else:
         user_id = current_user.id
 
@@ -309,9 +309,9 @@ def check_random_game():
         if user_id:
             user = mongo.db.users.find_one({"_id": ObjectId(user_id)})
             if not user:
-                return jsonify({"error": "User not found"}), 404
+                return jsonify({"error": "User not found"}), 404  # CHECK TODO 400
         else:
-            return jsonify({"error": "user_id parameter required in test mode"}), 400
+            return jsonify({"error": "user_id parameter required in test mode"}), 400  # CHECK TODO 400
     else:
         user_id = current_user.id
 
@@ -424,17 +424,17 @@ def upload_image():
             return jsonify({"error": "game_id and user_id parameters required in test mode"}), 400
         game = mongo.db.games.find_one({"_id": ObjectId(game_id)})
         if not game:
-            return jsonify({"error": "Game not found"}), 404
+            return jsonify({"error": "Game not found"}), 404  # CHECK TODO 400
         user = mongo.db.users.find_one({"_id": ObjectId(user_id)})
         if not user:
-            return jsonify({"error": "User not found"}), 404
+            return jsonify({"error": "User not found"}), 404  # CHECK TODO 400
     else:
         game_id = session.get('game_id')  # CHECK TODO in testing?
         if not game_id:
             return jsonify({"error": "No active game found"}), 400
         game = mongo.db.games.find_one({"_id": ObjectId(game_id)})
         if not game:
-            return jsonify({"error": "Game not found"}), 404
+            return jsonify({"error": "Game not found"}), 404  # CHECK TODO 400
         user_id = current_user.id
 
     file = request.files.get('file')
@@ -607,17 +607,17 @@ def submit_guess():
             return jsonify({"error": "game_id and user_id parameters required in test mode"}), 400
         game = mongo.db.games.find_one({"_id": ObjectId(game_id)})
         if not game:
-            return jsonify({"error": "Game not found"}), 404
+            return jsonify({"error": "Game not found"}), 404  # CHECK TODO 400
         user = mongo.db.users.find_one({"_id": ObjectId(user_id)})
         if not user:
-            return jsonify({"error": "User not found"}), 404
+            return jsonify({"error": "User not found"}), 404  # CHECK TODO 400
     else:
         game_id = session.get('game_id')  # CHECK TODO in testing?
         if not game_id:
             return jsonify({"error": "No active game found"}), 400
         game = mongo.db.games.find_one({"_id": ObjectId(game_id)})
         if not game:
-            return jsonify({"error": "Game not found"}), 404
+            return jsonify({"error": "Game not found"}), 404  # CHECK TODO 400
         user_id = current_user.id
 
     if 'player1_id' not in game or 'player2_id' not in game or 'answers' not in game or 'player_images' not in game:
