@@ -599,7 +599,7 @@ def show_merged_image():
 @app.route('/submit_guess', methods=['POST'])
 @login_required
 def submit_guess():
-    if app.testing:
+    if app.testing:  # CHECK TODO maybe make this part a function? we will use it couple of times
         # In test mode, accept game_id and user_id parameters from form data
         game_id = request.form.get('game_id')
         user_id = request.form.get('user_id')
