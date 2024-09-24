@@ -157,7 +157,7 @@ def start_game():
     }).inserted_id
 
     # Store the game ID in the session and redirect to the waiting room for created games
-    session['game_id'] = str(game_id)
+    session['game_id'] = str(game_id)  # CHECK TODO it will work in testing?
     return redirect(url_for('waiting_room_created_game', game_code=game_code))
 
 
@@ -176,6 +176,8 @@ def waiting_room_created_game():
 def check_created_game():
     # search for a game in which this player is the first player
     game_code = request.args.get('game_code')
+    if not game_code:
+        return "Error: Game code not provided.", 400  # CHECK
     print(f'Checking for game with code {game_code}')
     game_id = mongo.db.games.find_one({"player1_id": current_user.id, "status": "ready",
                                        "game_code": game_code})
@@ -196,7 +198,7 @@ def leave_created_game_waiting_room():
     print(f'User {current_user.id} is trying to leave the waiting room for a created game.')
 
     # Retrieve the game created by the current user
-    game_id = session.get('game_id')
+    game_id = session.get('game_id')  # CHECK TODO in testing?
     if game_id:
         game = mongo.db.games.find_one({"_id": ObjectId(game_id), "player1_id": current_user.id, "player2_id": None})
 
@@ -261,7 +263,7 @@ def join_random_game():
         }).inserted_id
 
         # Store the game ID in the session for both players
-        session['game_id'] = str(game_id)
+        session['game_id'] = str(game_id)  # CHECK TODO in testing?
 
         # Notify the first player by setting a "game_found" flag
         waiting_users_collection.update_one(
@@ -316,7 +318,7 @@ def check_random_game():
     # search for a game in which this player is the first player
     game_id = mongo.db.games.find_one({"player1_id": user_id, "status": "ready"})
     if game_id:
-        session['game_id'] = str(game_id['_id'])
+        session['game_id'] = str(game_id['_id'])  # CHECK TODO in testing?
         # delete this user from the waiting users collection
         waiting_users_collection.delete_one({"user_id": user_id})
         print(f'The size of the waiting users collection is \
@@ -355,7 +357,7 @@ def enter_code():
             )
 
             # Redirect both players to the game ready page
-            session['game_id'] = str(game['_id'])
+            session['game_id'] = str(game['_id'])  # CHECK TODO in testing?
             return redirect(url_for('load_image'))
 
         else:
@@ -377,13 +379,14 @@ def enter_code():
 #     return redirect(url_for('home'))
 
 
-@app.route('/load_image')  # CHECK TODO load-image
+@app.route('/load_image')
 @login_required
 def load_image():
-    if not session.get('game_id'):
-        return redirect(url_for('home'))
-    elif session.get('waiting-for-other') or session.get('show_merged_image'):
-        return redirect(url_for('home'))
+    if 'game_id' not in session:  # CHECK TODO in testing?
+        return "Error: No game ID found in the session.", 400
+    # elif session.get('waiting-for-other') or session.get('show_merged_image'):
+    # CHECK TODO i dont know how to check this without session. Maybe check in the game if the player already uploaded an image?
+    #     return redirect(url_for('home'))
     else:
         game = mongo.db.games.find_one({"_id": ObjectId(session['game_id'])})
         if not game:
@@ -398,7 +401,7 @@ def load_image():
     return render_template('load_image.html', predefined_images=predefined_images)
 
 
-@app.route("/search_photos", methods=["POST"])  # CHECK TODO search-photos
+@app.route("/search_photos", methods=["POST"])
 def search_photos():
     data = request.get_json()
     query = data.get('query', '')
@@ -410,7 +413,7 @@ def search_photos():
     return jsonify({"photos": photo_urls})
 
 
-@app.route('/upload_image', methods=['POST'])  # CHECK TODO upload-image
+@app.route('/upload_image', methods=['POST'])
 @login_required
 def upload_image():
     if app.testing:
@@ -426,7 +429,7 @@ def upload_image():
         if not user:
             return jsonify({"error": "User not found"}), 404
     else:
-        game_id = session.get('game_id')
+        game_id = session.get('game_id')  # CHECK TODO in testing?
         if not game_id:
             return jsonify({"error": "No active game found"}), 400
         game = mongo.db.games.find_one({"_id": ObjectId(game_id)})
@@ -527,7 +530,8 @@ def upload_image():
 @login_required
 def waiting_for_other():  # upload_image
     # check if the user is in a game and he has uploaded an image
-    if not session.get('game_id'):  # CHECK
+    game_id = session.get('game_id')  # CHECK TODO in testing?
+    if not game_id:
         return "Error: No game ID found in the session.", 400
     game = mongo.db.games.find_one({"_id": ObjectId(session['game_id'])})
     if not game:
@@ -538,10 +542,10 @@ def waiting_for_other():  # upload_image
     return render_template('waiting_for_other_player_to_upload_image.html')
 
 
-@app.route('/check_merge_ready')  # CHECK TODO check-merge-ready
+@app.route('/check_merge_ready')
 @login_required
 def check_merge_ready():
-    game = mongo.db.games.find_one({"_id": ObjectId(session['game_id'])})
+    game = mongo.db.games.find_one({"_id": ObjectId(session['game_id'])})  # CHECK TODO in testing?
     # check if the game document has the merged image URL
     if game:
         if game.get("merged_image"):
@@ -552,11 +556,11 @@ def check_merge_ready():
     return jsonify({"status": "waiting", "message": "Still waiting for the other player."})
 
 
-@app.route('/show_merged_image')  # CHECK TODO show-merged-image
+@app.route('/show_merged_image')
 @login_required
 def show_merged_image():
     # Retrieve the current game document from the database
-    game = mongo.db.games.find_one({"_id": ObjectId(session['game_id'])})
+    game = mongo.db.games.find_one({"_id": ObjectId(session['game_id'])})  # CHECK TODO in testing?
 
     if game:  # CHECK
         merged_image_url = game.get("merged_image")
@@ -592,7 +596,7 @@ def show_merged_image():
     return render_template('guess_image.html', image_url=merged_image_url, options=options)
 
 
-@app.route('/submit_guess', methods=['POST'])  # CHECK TODO submit-guess
+@app.route('/submit_guess', methods=['POST'])
 @login_required
 def submit_guess():
     if app.testing:
@@ -608,7 +612,7 @@ def submit_guess():
         if not user:
             return jsonify({"error": "User not found"}), 404
     else:
-        game_id = session.get('game_id')
+        game_id = session.get('game_id')  # CHECK TODO in testing?
         if not game_id:
             return jsonify({"error": "No active game found"}), 400
         game = mongo.db.games.find_one({"_id": ObjectId(game_id)})
@@ -684,7 +688,7 @@ def game_result(result):
     return render_template('game_result.html', result=result)
 
 
-@app.route('/cancel_game', methods=['POST'])  # CHECK TODO cancel-game
+@app.route('/cancel_game', methods=['POST'])
 @login_required
 def cancel_game():
     print(f'User {current_user.id} is trying to cancel the game.')
@@ -708,7 +712,7 @@ def cancel_game():
     return jsonify({'error': 'Game not found'}), 400
 
 
-@app.route('/check_game_status', methods=['GET'])  # CHECK TODO check-game-status
+@app.route('/check_game_status', methods=['GET'])
 @login_required
 def check_game_status():
     game = mongo.db.games.find_one({"players": {"$in": [current_user.id]}})
@@ -722,7 +726,7 @@ def check_game_status():
     return jsonify({'status': 'active'})
 
 
-@app.route('/game_cancelled')  # CHECK TODO game-cancelled
+@app.route('/game_cancelled')
 @login_required
 def game_cancelled():
     # CHECK TODO is there a relevant check here?
