@@ -444,12 +444,13 @@ def load_image():
     game_id = session.get('game_id')  # CHECK TODO in testing?
     if not game_id:
         return jsonify({"error": "No active game found"}), 400
-    # CHECK TODO add a check that the game does not already have the images uploaded
-    #  Maybe check in the game if the player already uploaded an image?
     else:
         game = mongo.db.games.find_one({"_id": ObjectId(game_id)})
         if not game:
-            return redirect(url_for('home'))
+            return jsonify({"error": "Game not found"}), 400
+
+        if str(current_user.id) in game.get("player_images", {}):  # CHECK
+            return jsonify({"error": "Player already uploaded an image"}), 400
 
     print(f'User {current_user.id} is trying to load an image.')
 
@@ -598,7 +599,9 @@ def waiting_for_other():
     player_images = game.get("player_images", {})
     if str(current_user.id) not in player_images:
         return jsonify({"error": "Player has not uploaded an image yet"}), 400
-    # CHECK TODO check that the other player has not uploaded an image yet
+
+    if len(player_images) > 1:  # CHECK
+        return jsonify({"error": "Both players already uploaded images"}), 400
     return render_template('waiting_for_other_player_to_upload_image.html')
 
 
@@ -622,7 +625,6 @@ def check_merge_ready():
 @app.route('/show_merged_image')
 @login_required
 def show_merged_image():
-    # CHECK TODO check that the user has not choose an answer yet
     # Retrieve the current game document from the database
     game_id = session.get('game_id')  # CHECK TODO in testing?
     if not game_id:
@@ -635,6 +637,9 @@ def show_merged_image():
             return jsonify({"error": "Merged image not found"}), 400
     else:
         return jsonify({"error": "Game not found"}), 400
+
+    if 'guess_was_submitted' in game and game['guess_was_submitted'] == 1:  # CHECK
+        return jsonify({"error": "Player has already submitted their guess"}), 400
 
     # Determine the opponent's ID based on the player ID
     if game['player1_id'] == current_user.id:
@@ -666,7 +671,7 @@ def show_merged_image():
 @app.route('/submit_guess', methods=['POST'])
 @login_required
 def submit_guess():
-    if app.testing:  # CHECK TODO maybe make this part a function? we will use it couple of times
+    if app.testing:  # CHECK TODO maybe make this part a function? we use it couple of times
         # In test mode, accept game_id and user_id parameters from form data
         game_id = request.form.get('game_id')
         user_id = request.form.get('user_id')
@@ -749,9 +754,10 @@ def game_result(result):
     """
     # CHECK TODO we need a check here to see if there was really a game?
     #  The game itself already deleted.
-    #  Maybe delete the game in this function
+    #  Maybe delete the game in this function and not in the submit_guess function?
 
-    # CHECK TODO add a check that result is either 'win' or 'lose'
+    if result not in ['win', 'lose']:  # CHECK
+        return jsonify({"error": "Invalid result"}), 400
     return render_template('game_result.html', result=result)
 
 
@@ -775,7 +781,6 @@ def cancel_game():
 
         return jsonify({'status': 'canceled'})
 
-    # CHECK TODO in case of error, we return json like this or a text like in row 561?
     return jsonify({'error': 'Game not found'}), 400
 
 
@@ -796,5 +801,5 @@ def check_game_status():
 @app.route('/game_cancelled')
 @login_required
 def game_cancelled():
-    # CHECK TODO is there a relevant check here?
+    # CHECK TODO is there a relevant check here? The game itself already deleted.
     return render_template('game_cancelled.html')
