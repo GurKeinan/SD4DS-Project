@@ -1,6 +1,6 @@
 services:
   web:
-    build: .
+    build: ./face_merge_quiz
     container_name: face-merge-web
     ports:
       - "80:5000"  # Maps port 5000 inside the container to port 5001 on your host machine
@@ -9,10 +9,10 @@ services:
     depends_on:
       - mongodb
     volumes:
-      - ./app:/app/app  # Maps the app directory to the container's working directory
+      - ./face_merge_quiz/app:/app/app  # Maps the app directory to the container's working directory
       # TODO: delete the above line before submitting
     env_file:
-      - .env
+      - face_merge_quiz/.env
     environment:
         - MONGO_URI=mongodb://face-merge-mongodb:27017/db
 
@@ -25,7 +25,7 @@ services:
       - face-merge-net
 
   image-classification-api:
-    build: ../image_classification_api
+    build: ./image_classification_api
     container_name: face-merge-image-classification-api
     ports:
       - "6000:6000"
@@ -34,9 +34,9 @@ services:
     depends_on:
       - mongodb
     volumes:
-      - ../image_classification_api:/app
+      - ./image_classification_api:/app
     env_file:
-      - .env
+      - ./image_classification_api/.env
     environment:
       - MONGO_URI=mongodb://face-merge-mongodb:27017/api_db
       # in the above line, api_db is the name of the database
