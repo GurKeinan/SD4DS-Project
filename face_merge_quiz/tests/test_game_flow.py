@@ -20,6 +20,7 @@ class TestGameFlow(unittest.TestCase):
     def setUp(self):
         self.client1 = self.app.test_client()
         self.client2 = self.app.test_client()
+        self.client3 = self.app.test_client()
         self.app_context = self.app.app_context()
         self.app_context.push()
         mongo.db.users.delete_many({})
@@ -236,3 +237,92 @@ class TestGameFlow(unittest.TestCase):
 
         # Verify that the game has been deleted after completion
         self.assertEqual(mongo.db.games.count_documents({}), 0)
+
+    def test_random_game_third_player_not_paired(self):
+        # Sign up three users
+        self._signup(self.client1, 'user1', 'password1')
+        self._signup(self.client2, 'user2', 'password2')
+        self._signup(self.client3, 'user3', 'password3')
+        self.assertEqual(mongo.db.users.count_documents({}), 3)
+
+        # Log in all users
+        self._login(self.client1, 'user1', 'password1')
+        self._login(self.client2, 'user2', 'password2')
+        self._login(self.client3, 'user3', 'password3')
+
+        user1_id = str(mongo.db.users.find_one({'username': 'user1'})['_id'])
+        user2_id = str(mongo.db.users.find_one({'username': 'user2'})['_id'])
+        user3_id = str(mongo.db.users.find_one({'username': 'user3'})['_id'])
+
+        # User1 and User2 join a random game
+        self._join_random_game(self.client1, user1_id)
+        join_response = self._join_random_game(self.client2, user2_id)
+        self.assertIn(b'Upload a Photo or Choose a Predefined One', join_response.data)
+
+        # Verify that User1 and User2 are paired
+        game = mongo.db.games.find_one({})
+        self.assertIsNotNone(game)
+        self.assertTrue(game['player1_id'] in [user1_id, user2_id])
+        self.assertTrue(game['player2_id'] in [user1_id, user2_id])
+
+        # call the check random game endpoint for user1 for cleanup
+        self._check_random_game(self.client1, user1_id)
+        self.assertEqual(waiting_users_collection.count_documents({}), 0)
+
+        # User3 tries to join a random game
+        join_response = self._join_random_game(self.client3, user3_id)
+
+        # Check if the response is a redirect (302 status code)
+        if join_response.status_code == 302:
+            # If it's a redirect, follow it to get the final response
+            join_response = self.client3.get(join_response.location, follow_redirects=True)
+
+        # Now check if the response contains the expected content
+        self.assertIn(b'Waiting for another player to join', join_response.data)
+
+        # Verify that User3 is not paired and is in the waiting queue
+        self.assertEqual(waiting_users_collection.count_documents({}), 1)
+        waiting_user = waiting_users_collection.find_one({})
+        self.assertEqual(waiting_user['user_id'], user3_id)
+
+        # Clean up
+        mongo.db.games.delete_many({})
+        waiting_users_collection.delete_many({})
+
+    def test_join_game_with_wrong_code(self):
+        # Sign up two users
+        self._signup(self.client1, 'user1', 'password1')
+        self._signup(self.client2, 'user2', 'password2')
+        self.assertEqual(mongo.db.users.count_documents({}), 2)
+
+        # Log in both users
+        self._login(self.client1, 'user1', 'password1')
+        self._login(self.client2, 'user2', 'password2')
+
+        user1_id = str(mongo.db.users.find_one({'username': 'user1'})['_id'])
+        user2_id = str(mongo.db.users.find_one({'username': 'user2'})['_id'])
+
+        # User1 creates a game
+        create_game_response = self._create_game(self.client1, user1_id)
+        create_game_data = json.loads(create_game_response.data)
+        correct_game_code = create_game_data['game_code']
+
+        # User2 tries to join with a wrong code
+        wrong_game_code = 'WRONG123'
+        join_game_response = self._join_created_game(self.client2, user2_id, wrong_game_code)
+
+        # Verify that joining with wrong code fails
+        self.assertIn(b'Invalid or already used game code', join_game_response.data)
+
+        # Verify that no game exists with the wrong code
+        game_with_wrong_code = mongo.db.games.find_one({'game_code': wrong_game_code})
+        self.assertIsNone(game_with_wrong_code)
+
+        # Verify that the correct game still exists
+        correct_game = mongo.db.games.find_one({'game_code': correct_game_code})
+        self.assertIsNotNone(correct_game)
+        self.assertEqual(correct_game['player1_id'], user1_id)
+        self.assertIsNone(correct_game['player2_id'])
+
+        # Clean up
+        mongo.db.games.delete_many({})
