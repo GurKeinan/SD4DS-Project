@@ -14,7 +14,7 @@ import logging
 
 logging.basicConfig(level=logging.INFO)
 
-start_time = time.time()  # TODO: where should this be defined?
+start_time = time.time()
 
 app = Flask(__name__)
 app.config['MONGO_URI'] = os.environ.get('MONGO_URI')  # MongoDB URI

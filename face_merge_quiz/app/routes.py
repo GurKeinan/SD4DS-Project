@@ -1,9 +1,15 @@
 """
 This module contains the routes for the FaceMergeQuiz application.
 """
-# TODO: generally, check that there isn't a way to not follow the right page order (using http\the browser back button)
+# TODO: check that there isn't a way to not follow the right page order (using http\the browser back button)
 # TODO: regulate the error messages and the status codes: "Game not found" and "No active game found"
-# TODO: state GET or POST or both for each route
+# TODO GET and POST
+# TODO remove all -?
+# TODO run tests with the new limiter
+# TODO waiting_users_collection.delete_one({"user_id": user_id}) crash if the user is not in the collection?
+# TODO you can write game_result/win and game_result/lose in the browser and it will work
+# TODO I wrote the path cancel_game in the browser and it returned Internal Server Error (and not 400)
+
 import os
 import random
 import base64
@@ -27,6 +33,13 @@ limiter = Limiter(
     default_limits=[],  # "200 per day", "50 per hour"
     storage_uri="memory://"
 )
+
+
+def dynamic_limit():
+    if app.testing:
+        return None  # No limit during testing
+    return "1/second"  # Regular rate limit
+
 
 # Set up basic logging
 logging.basicConfig(level=logging.INFO)
@@ -75,7 +88,7 @@ def home():
 
 
 @app.route('/sign-up', methods=['GET', 'POST'])
-@limiter.limit("1/second")
+@limiter.limit(dynamic_limit)
 def sign_up():
     if request.method == 'POST':
         username = request.form['username']
@@ -103,7 +116,7 @@ def sign_up():
 
 
 @app.route('/login', methods=['GET', 'POST'])
-@limiter.limit("1/second")
+@limiter.limit(dynamic_limit)
 def login():
     if request.method == 'POST':
         username = request.form['username']
@@ -429,17 +442,6 @@ def enter_code():
     return render_template('enter_code.html')
 
 
-# @app.route('/game-ready')
-# @login_required
-# def game_ready():
-#     game_id = session.get('game_id')
-#     if game_id:
-#         game = mongo.db.games.find_one({"_id": ObjectId(game_id)})
-#         if game:
-#             return render_template('load_image.html', game=game)
-#     return redirect(url_for('home'))
-
-
 @app.route('/load_image')
 @login_required
 def load_image():
@@ -630,7 +632,7 @@ def show_merged_image():
         return jsonify({"error": "No active game found"}), 400
     game = mongo.db.games.find_one({"_id": ObjectId(game_id)})
 
-    if game:  # CHECK
+    if game:
         merged_image_url = game.get("merged_image")
         if not merged_image_url:
             return jsonify({"error": "Merged image not found"}), 400
