@@ -31,7 +31,7 @@ def load_user(user_id):
     return None
 
 
-@app.route('/api/status')
+@app.route('/api/status', methods=['GET'])
 @login_required
 def api_status():
     response = requests.get(f'{BASE_URL}/status')
