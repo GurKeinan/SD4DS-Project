@@ -1,3 +1,4 @@
+import time
 import unittest
 from app import app, mongo
 
@@ -40,6 +41,7 @@ class TestLogin(unittest.TestCase):
 
     def test_login_unsigned_up_user(self):
         response = self._login('notLoggedInUser', 'notLoggedInPassword')
+        time.sleep(1.5)
         self.assertIn(b'Login unsuccessful. Please check username and password', response.data)
 
     def _signup(self, username, password):
@@ -57,20 +59,24 @@ class TestLogin(unittest.TestCase):
 
     def test_post_signup(self):
         response = self._signup('testuser', 'testpassword')
+        time.sleep(1.5)
         self.assertIn(b'Account created successfully!', response.data)
         self.assertIn(b'Join a Game', response.data)
 
     def test_post_signup_existing_user(self):
         self._signup('testuser2', 'testpassword')
+        time.sleep(1.5)
         response = self._signup('testuser2', 'testpassword')
         self.assertIn(b'Username already exists. Please choose another one.', response.data)
 
     def test_login_signed_up_user(self):
         # First sign up the user
         self._signup('testuser3', 'testpassword')
+        time.sleep(1.5)
 
         # Then try to log in with the same credentials
         response = self._login('testuser3', 'testpassword')
+        time.sleep(1.5)
 
         # Check if the login was successful (you might need to adjust the success message)
         self.assertIn(b'Logged in successfully!', response.data)

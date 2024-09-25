@@ -73,11 +73,13 @@ class TestGameFlow(unittest.TestCase):
     def test_random_game_flow(self):
         # Step 1: Sign up two users
         self._signup(self.client1, 'user1', 'password1')
+        time.sleep(1.5)
         self._signup(self.client2, 'user2', 'password2')
         self.assertEqual(mongo.db.users.count_documents({}), 2)
 
         # Step 2: Log in both users
         self._login(self.client1, 'user1', 'password1')
+        time.sleep(1.5)
         self._login(self.client2, 'user2', 'password2')
 
         user1_id = str(mongo.db.users.find_one({'username': 'user1'})['_id'])
@@ -161,11 +163,13 @@ class TestGameFlow(unittest.TestCase):
     def test_created_game_flow(self):
         # Sign up two users
         self._signup(self.client1, 'user1', 'password1')
+        time.sleep(1.5)
         self._signup(self.client2, 'user2', 'password2')
         self.assertEqual(mongo.db.users.count_documents({}), 2)
 
         # Log in both users
         self._login(self.client1, 'user1', 'password1')
+        time.sleep(1.5)
         self._login(self.client2, 'user2', 'password2')
 
         user1_id = str(mongo.db.users.find_one({'username': 'user1'})['_id'])
@@ -241,13 +245,17 @@ class TestGameFlow(unittest.TestCase):
     def test_random_game_third_player_not_paired(self):
         # Sign up three users
         self._signup(self.client1, 'user1', 'password1')
+        time.sleep(1.5)
         self._signup(self.client2, 'user2', 'password2')
+        time.sleep(1.5)
         self._signup(self.client3, 'user3', 'password3')
         self.assertEqual(mongo.db.users.count_documents({}), 3)
 
         # Log in all users
         self._login(self.client1, 'user1', 'password1')
+        time.sleep(1.5)
         self._login(self.client2, 'user2', 'password2')
+        time.sleep(1.5)
         self._login(self.client3, 'user3', 'password3')
 
         user1_id = str(mongo.db.users.find_one({'username': 'user1'})['_id'])
@@ -292,11 +300,13 @@ class TestGameFlow(unittest.TestCase):
     def test_join_game_with_wrong_code(self):
         # Sign up two users
         self._signup(self.client1, 'user1', 'password1')
+        time.sleep(1.5)
         self._signup(self.client2, 'user2', 'password2')
         self.assertEqual(mongo.db.users.count_documents({}), 2)
 
         # Log in both users
         self._login(self.client1, 'user1', 'password1')
+        time.sleep(1.5)
         self._login(self.client2, 'user2', 'password2')
 
         user1_id = str(mongo.db.users.find_one({'username': 'user1'})['_id'])
