@@ -112,10 +112,7 @@ To run the project, follow these steps:
 ```bash
 docker-compose up --build
 ```
-4. The API endpoints will be available from the following URLs:
-   - Synchronous image upload and classification: /upload_image
-   - Asynchronous image upload and classification: /async_upload
-   - Getting results of asynchronous classification: /result/<request_id>
+- The API endpoints will be available from the application - one can enter the relevant page from the navigation bar.
 
 ## Testing the Project
 - To test the API, run the following command in the terminal from inside of the directory 'image_classification_api':
