@@ -13,5 +13,5 @@ RUN python download_weights.py
 
 # we set the environment variable GUNICORN_WORKERS in the docker-compose.yml file
 
-CMD gunicorn -w "$GUNICORN_WORKERS" -b 0.0.0.0:6000 --log-level debug app:app
+CMD gunicorn -w "$GUNICORN_WORKERS" --threads 6 -b 0.0.0.0:6000 --log-level debug app:app
 

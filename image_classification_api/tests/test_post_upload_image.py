@@ -7,6 +7,12 @@ class TestPostUploadImage(BaseAPITest):
         super().setUp()
         self.endpoint = self.BASE_URL + '/upload_image'
 
+    def test_content_type_is_json(self):
+        with open(self.test_image_png, 'rb') as f:
+            files = {'image': ('britney.png', f, 'image/png')}
+            response = requests.post(self.endpoint, files=files)
+        self.assertEqual(response.headers['Content-Type'], 'application/json')
+
 
     def test_it_returns_200_when_image_is_uploaded(self):
         test_files = [(self.test_image_jpeg, 'image/jpeg'), (self.test_image_png, 'image/png')]

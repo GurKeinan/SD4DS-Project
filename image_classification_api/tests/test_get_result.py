@@ -21,6 +21,8 @@ class TestGetResult(BaseAPITest):
         for request_id in non_existent_ids:
             with self.subTest(request_id=request_id):
                 response = requests.get(self.partial_endpoint + str(request_id))
+                # assert it is application/json
+                self.assertEqual(response.headers['Content-Type'], 'application/json')
                 self.assertEqual(response.status_code, 404)
                 self.assertEqual(response.json(), {'error': {'code': 404, 'message': 'ID not found'}})
 
