@@ -1,14 +1,15 @@
-# To run the tests inside the container
-# docker-compose run web python -m unittest discover
+# Run tests that check the image classification API
 
-# To run the tests outside the container
+# Start containers in detached mode
+docker-compose up -d
+
+# Wait for 3 seconds to give the containers time to start
+sleep 3
+
+# Run the tests
 python -m unittest discover
 
 
+# Note: if needed, run the following command to make this script executable
+# chmod +x run_tests.sh
 
-# "python -m unittest discover" runs all tests in the the current directory (including subdirectories),
-# but recognizes only files whose names start with "test".
-# "docker-compose run web" also starts the db because of the depends_on in docker-compose.yml
-# in terminal run:
-# chmod +x run_tests.sh  # to make the script executable
-# ./run_tests.sh

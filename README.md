@@ -108,18 +108,18 @@ SD4DS Project
 To run the project, follow these steps:
 1. Clone the repository.
 2. Ensure that Docker is installed on your machine.
-3. Run the following command in the terminal from inside of the main directory of the project:
+3. Run the following command in the terminal from inside the main directory of the project:
 ```bash
 docker-compose up --build
 ```
-- The API endpoints will be available from the application - one can enter the relevant page from the navigation bar.
+- The API endpoints will be available from the application - you can enter the relevant page from the navigation bar.
 
 ## Testing the Project
-- To test the API, run the following command in the terminal from inside of the directory 'image_classification_api':
+- To test the API, run the following command in the terminal from inside the directory 'image_classification_api':
 ```bash
 ./run_tests.sh
 ```
-- To test the quiz game, run the following command in the terminal from inside of the directory 'face_merge_quiz':
+- To test the quiz game, run the following command in the terminal from inside the directory 'face_merge_quiz':
 ```bash
 ./run_tests.sh
 ```
