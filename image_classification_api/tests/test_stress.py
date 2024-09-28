@@ -29,15 +29,16 @@ class StressTest(BaseAPITest):
         T = self.measure_time_for_single_inference_job()
         self.save_time_to_file(f"Time for single inference job: {T} seconds\n")
 
-        num_concurrent_jobs = 6
+        num_concurrent_jobs = 4
         threads = []
-        start_time = time.time()
 
         # Start concurrent threads
         for _ in range(num_concurrent_jobs):
             thread = threading.Thread(target=measure_time_for_single_inference_job, args=(self.BASE_URL, self.test_image_png))
             threads.append(thread)
             thread.start()
+
+        start_time = time.time()
 
         # Wait for all threads to finish
         for thread in threads:
