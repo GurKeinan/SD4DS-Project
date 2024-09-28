@@ -8,10 +8,13 @@
 
 # .tar files, they might be heavy
 *.tar
+
+# .env files, they contain sensitive information (API keys)
 *.env
 
 */static
 *.log
+*.jpg
 
 # visual studio code stuff
 *.xml
@@ -21,4 +24,6 @@ face_merge_quiz/.vscode/settings.json
 
 # word
 *.docx
-face_merge_quiz/app/static/.DS_Store
+
+# Mac stuff
+*.DS_Store
