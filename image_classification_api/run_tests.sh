@@ -9,6 +9,9 @@ sleep 3
 # Run the tests
 python -m unittest discover
 
+# Stop and remove the containers
+docker-compose down
+
 
 # Note: if needed, run the following command to make this script executable
 # chmod +x run_tests.sh

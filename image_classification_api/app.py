@@ -1,3 +1,5 @@
+import torch
+from PIL import Image
 from flask_pymongo import PyMongo
 
 import random
@@ -87,32 +89,33 @@ preprocess = transforms.Compose([
 ])
 
 
-def classify_image(filepath):
-    # a simple version
-    time.sleep(1)
-    return [{'name': 'tomato', 'score': 0.9}, {'name': 'carrot', 'score': 0.02}]
-
-
 # def classify_image(filepath):
-#     with Image.open(filepath) as img:
-#         # Convert PNG images (with an alpha channel) to RGB
-#         if img.mode == 'RGBA':
-#             img = img.convert('RGB')
-#
-#         # Preprocess the image
-#         img_t = preprocess(img)
-#         batch_t = torch.unsqueeze(img_t, 0)
-#
-#         # Perform inference
-#         with torch.no_grad():
-#             out = model(batch_t)
-#
-#         # Get the top 5 predictions
-#         _, indices = torch.topk(out, 5)
-#         percentages = torch.nn.functional.softmax(out, dim=1)[0] * 100
-#         predictions = [(class_names[idx], percentages[idx].item()) for idx in indices[0]]
-#
-#     return [{'name': name, 'score': score / 100} for name, score in predictions]
+#     # a simple version
+#     time.sleep(1)
+#     return [{'name': 'tomato', 'score': 0.9}, {'name': 'carrot', 'score': 0.02}]
+
+
+def classify_image(filepath):
+    with Image.open(filepath) as img:
+        # Convert PNG images (with an alpha channel) to RGB
+        if img.mode == 'RGBA':
+            img = img.convert('RGB')
+
+        # Preprocess the image
+        img_t = preprocess(img)
+        batch_t = torch.unsqueeze(img_t, 0)
+
+        # Perform inference
+        with torch.no_grad():
+            out = model(batch_t)
+
+        # Get the top 5 predictions
+        _, indices = torch.topk(out, 5)
+        percentages = torch.nn.functional.softmax(out, dim=1)[0] * 100
+        predictions = [(class_names[idx], percentages[idx].item()) for idx in indices[0]]
+
+    time.sleep(8)
+    return [{'name': name, 'score': score / 100} for name, score in predictions]
 
 # def classify_image(image_path):
 #     """
