@@ -2,7 +2,7 @@
 ## Team Members
 - Gur Keinan 213635899
 - Idan Pipano 213495260
-- Itamar Reinman 3269935285
+- Itamar Reinman 326935285
 
 ## Project Description
 The project contains two functionalities:

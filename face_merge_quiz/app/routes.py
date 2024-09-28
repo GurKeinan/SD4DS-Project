@@ -1,14 +1,13 @@
 """
 This module contains the routes for the FaceMergeQuiz application.
 """
-# TODO: check that there isn't a way to not follow the right page order (using http\the browser back button)
-# TODO: regulate the error messages and the status codes: "Game not found" and "No active game found"
-# TODO GET and POST
-# TODO remove all -?
-# TODO run tests with the new limiter
 # TODO waiting_users_collection.delete_one({"user_id": user_id}) crash if the user is not in the collection?
 # TODO you can write game_result/win and game_result/lose in the browser and it will work
+
 # TODO I wrote the path cancel_game in the browser and it returned Internal Server Error (and not 400)
+# TODO GET and POST in all the routes
+# TODO: regulate the error messages and the status codes: "Game not found" and "No active game found"
+# TODO remove all -?
 
 import os
 import random
