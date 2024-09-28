@@ -1,7 +1,7 @@
 import unittest
 import requests
 import time
-import multiprocessing
+import threading
 from .test_base import BaseAPITest
 
 def measure_time_for_single_inference_job(base_url, valid_image_file):
@@ -30,18 +30,18 @@ class StressTest(BaseAPITest):
         self.save_time_to_file(f"Time for single inference job: {T} seconds\n")
 
         num_concurrent_jobs = 6
-        processes = []
+        threads = []
         start_time = time.time()
 
-        # Start concurrent processes
+        # Start concurrent threads
         for _ in range(num_concurrent_jobs):
-            process = multiprocessing.Process(target=measure_time_for_single_inference_job, args=(self.BASE_URL, self.test_image_png))
-            processes.append(process)
-            process.start()
+            thread = threading.Thread(target=measure_time_for_single_inference_job, args=(self.BASE_URL, self.test_image_png))
+            threads.append(thread)
+            thread.start()
 
-        # Wait for all processes to finish
-        for process in processes:
-            process.join()
+        # Wait for all threads to finish
+        for thread in threads:
+            thread.join()
 
         end_time = time.time()
         elapsed_time = end_time - start_time
