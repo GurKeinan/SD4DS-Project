@@ -7,7 +7,7 @@ from .test_base import BaseAPITest
 import requests
 import time
 
-ENOUGH_TIME_FOR_PROCESSING = 12  # seconds
+ENOUGH_TIME_FOR_PROCESSING = 3  # seconds
 
 class TestPostAsyncUpload(BaseAPITest):
 
