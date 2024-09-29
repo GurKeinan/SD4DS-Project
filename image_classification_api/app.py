@@ -157,6 +157,7 @@ def classify_image(image_path):
                 match['name'] = match.pop('label')
 
             # Return the classification results
+            time.sleep(0.5)
             return result
         else:
             # Raise an exception if the request failed
