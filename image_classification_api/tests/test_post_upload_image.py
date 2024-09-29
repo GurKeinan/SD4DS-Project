@@ -1,6 +1,7 @@
 import unittest
 from .test_base import BaseAPITest
 import requests
+import time
 
 class TestPostUploadImage(BaseAPITest):
     def setUp(self):
@@ -8,6 +9,7 @@ class TestPostUploadImage(BaseAPITest):
         self.endpoint = self.BASE_URL + '/upload_image'
 
     def test_content_type_is_json(self):
+        time.sleep(1)
         with open(self.test_image_png, 'rb') as f:
             files = {'image': ('britney.png', f, 'image/png')}
             response = requests.post(self.endpoint, files=files)
@@ -51,6 +53,7 @@ class TestPostUploadImage(BaseAPITest):
 
     def test_successful_uploads(self):
         for true_file_path in [self.test_image_png, self.test_image_jpeg]:
+            time.sleep(1)
             with self.subTest(true_file_path=true_file_path):
                 self._test_successful_upload(true_file_path)
 

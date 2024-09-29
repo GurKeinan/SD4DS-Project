@@ -7,7 +7,7 @@ from .test_base import BaseAPITest
 import requests
 import time
 
-ENOUGH_TIME_FOR_PROCESSING = 3  # seconds
+ENOUGH_TIME_FOR_PROCESSING = 5  # seconds
 
 class TestPostAsyncUpload(BaseAPITest):
 
@@ -18,6 +18,7 @@ class TestPostAsyncUpload(BaseAPITest):
         # full endpoint is self.result_partial_endpoint + str(request_id)
 
     def test_get_result_returns_200_if_request_id_exists(self):
+        time.sleep(1)
         with open(self.test_image_png, 'rb') as f:
             response = requests.post(self.async_upload_endpoint, files={'image': (self.test_image_png, f, 'image/png')})
         self.assertEqual(response.status_code, 202)
@@ -26,6 +27,7 @@ class TestPostAsyncUpload(BaseAPITest):
         self.assertEqual(response.status_code, 200)
 
     def test_behavior_of_get_status_when_status_is_completed(self):
+        time.sleep(1)
         with open(self.test_image_png, 'rb') as f:
             response = requests.post(self.async_upload_endpoint, files={'image': (self.test_image_png, f, 'image/png')})
         self.assertEqual(response.status_code, 202)

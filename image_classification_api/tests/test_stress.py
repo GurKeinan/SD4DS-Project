@@ -26,7 +26,9 @@ class StressTest(BaseAPITest):
         This test tests the following technical requirement:
         Run 6 concurrent image inference jobs and check they finish in less than 1.1 * T.
         """
+        time.sleep(1)  # because gemini API has a rate limit
         T = self.measure_time_for_single_inference_job()
+        time.sleep(1)
         self.save_time_to_file(f"Time for single inference job: {T} seconds\n")
 
         num_concurrent_jobs = 4
