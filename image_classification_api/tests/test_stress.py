@@ -13,7 +13,7 @@ def measure_time_for_single_inference_job(base_url, valid_image_file):
     request_id = response.json()['request_id']
     while True:
         response = requests.get(base_url + f'/result/{request_id}')
-        if response.json()['status'] == 'completed':
+        if response.json()['status'] != 'running':
             break
     end_time = time.time()
     elapsed_time = end_time - start_time
@@ -31,7 +31,7 @@ class StressTest(BaseAPITest):
         time.sleep(1)
         self.save_time_to_file(f"Time for single inference job: {T} seconds\n")
 
-        num_concurrent_jobs = 4
+        num_concurrent_jobs = 6
         threads = []
 
         # Start concurrent threads
