@@ -3,6 +3,7 @@ Flask-PyMongo
 gunicorn
 pymongo
 Pillow
+google-generativeai
 
 # for testing
 requests

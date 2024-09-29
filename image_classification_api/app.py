@@ -13,8 +13,14 @@ from torchvision import models, transforms
 from torchvision.models import ResNet50_Weights
 import threading
 
-import logging
+import google.generativeai as genai
+from PIL import Image
 
+# Configure Gemini API
+API_KEY = 'AIzaSyBVSBpumtGAT_ycntv5hhLhpsnFZTRLlZc'  # Replace with your actual API key
+genai.configure(api_key=API_KEY)
+
+import logging
 logging.basicConfig(level=logging.INFO)
 
 start_time = time.time()
@@ -118,54 +124,74 @@ preprocess = transforms.Compose([
 #     time.sleep(8)
 #     return [{'name': name, 'score': score / 100} for name, score in predictions]
 
+# def classify_image(image_path):
+#     """
+#     Classifies an image using Hugging Face Inference API with a ViT model.
+#
+#     Returns:
+#     - result (list): A list of dictionaries, each containing the classification label and its score.
+#                      Example: [{'label': 'tomato', 'score': 0.9}, {'label': 'carrot', 'score': 0.02}]
+#
+#     Raises:
+#     - Exception: If there is an error with the request or the classification fails.
+#     """
+#
+#     # Hugging Face API URL for the image classification model
+#     api_url = "https://api-inference.huggingface.co/models/google/vit-base-patch16-224"
+#
+#     # Prepare the request headers with the API token
+#     headers = {
+#         "Authorization": f"Bearer {os.environ['HF_API_TOKEN']}"
+#     }
+#
+#     try:
+#         # Open the image file in binary mode and read its content
+#         with open(image_path, 'rb') as image_file:
+#             image_data = image_file.read()
+#
+#         # Send the request to the Hugging Face API
+#         response = requests.post(api_url, headers=headers, data=image_data)
+#         logging.info(f"Response: {response}")
+#
+#         # Check if the request was successful
+#         if response.status_code == 200:
+#             # Parse the JSON response
+#             result = response.json()
+#             # this API returns a list of dictionaries, with 'label' and 'score' keys,
+#             # while we need 'name' and 'score':
+#             for match in result:
+#                 match['name'] = match.pop('label')
+#
+#             # Return the classification results
+#             time.sleep(0.5)
+#             return result
+#         else:
+#             # Raise an exception if the request failed
+#             raise Exception(f"Error: {response.status_code} - {response.text}")
+#
+#     except Exception as e:
+#         print(f"An error occurred: {e}")
+#         return None
+
+
+import mimetypes
 def classify_image(image_path):
-    """
-    Classifies an image using Hugging Face Inference API with a ViT model.
+    # Upload the image file
+    logging.info(f"The guessed MIME type is {mimetypes.guess_type(image_path)}")
+    image_file = genai.upload_file(path=image_path, display_name="Uploaded Image")
 
-    Returns:
-    - result (list): A list of dictionaries, each containing the classification label and its score.
-                     Example: [{'label': 'tomato', 'score': 0.9}, {'label': 'carrot', 'score': 0.02}]
+    # Initialize the model
+    google_model = genai.GenerativeModel(model_name="gemini-1.5-pro-latest")
 
-    Raises:
-    - Exception: If there is an error with the request or the classification fails.
-    """
+    # Create a classification prompt (or customize as needed)
+    prompt = ("Classify the objects in this image. Return the names and confidence scores of the objects."
+              "Use the format [ {'name': string, 'score': number}]. For example: [{'name': 'tomato', 'score': 0.9}, {'name':'carrot', 'score': 0.02}]")
 
-    # Hugging Face API URL for the image classification model
-    api_url = "https://api-inference.huggingface.co/models/google/vit-base-patch16-224"
+    # Generate content using the model
+    response = google_model.generate_content([image_file, prompt])
 
-    # Prepare the request headers with the API token
-    headers = {
-        "Authorization": f"Bearer {os.environ['HF_API_TOKEN']}"
-    }
-
-    try:
-        # Open the image file in binary mode and read its content
-        with open(image_path, 'rb') as image_file:
-            image_data = image_file.read()
-
-        # Send the request to the Hugging Face API
-        response = requests.post(api_url, headers=headers, data=image_data)
-        logging.info(f"Response: {response}")
-
-        # Check if the request was successful
-        if response.status_code == 200:
-            # Parse the JSON response
-            result = response.json()
-            # this API returns a list of dictionaries, with 'label' and 'score' keys,
-            # while we need 'name' and 'score':
-            for match in result:
-                match['name'] = match.pop('label')
-
-            # Return the classification results
-            time.sleep(0.5)
-            return result
-        else:
-            # Raise an exception if the request failed
-            raise Exception(f"Error: {response.status_code} - {response.text}")
-
-    except Exception as e:
-        print(f"An error occurred: {e}")
-        return None
+    # transform the results into a list of dictionaries
+    return eval(response.text)
 
 
 @app.route('/upload_image', methods=['POST'])
@@ -218,8 +244,9 @@ def async_upload():
 
     if file and allowed_file(file.filename):
         request_id = generate_unique_id()
-
-        filename = secure_filename(str(request_id))
+        # make a variable filename that will be the request_id plus the extension of the file
+        filename = str(request_id) + '.' + file.filename.rsplit('.', 1)[1].lower()
+        filename = secure_filename(filename)
         filepath = os.path.join('/tmp', filename)
         file.save(filepath)
 
@@ -242,8 +269,9 @@ def async_upload():
 
 def process_image_async(filepath, request_id):
     try:
+        logging.info(f"Processing started for request ID {request_id}")
         matches = classify_image(filepath)
-
+        logging.info(f"Processing completed for request ID {request_id}")
         # Update the request status as 'completed' and save the results
         get_db().requests.update_one(
             {'request_id': request_id},
