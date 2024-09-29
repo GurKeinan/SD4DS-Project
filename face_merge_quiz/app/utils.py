@@ -31,8 +31,8 @@ def fetch_photos(query, prefix='', suffix='', start_index=1):
         'cx': os.environ.get('CX'),
         'q': q,
         'searchType': 'image',
-        'start': start_index,  # Starting index for pagination
-        'num': 10,  # Number of results per page (up to 10)
+        'start': start_index,
+        'num': 10,
     }
 
     response = requests.get(SEARCH_URL, params=params)
@@ -41,7 +41,6 @@ def fetch_photos(query, prefix='', suffix='', start_index=1):
     links = [item['link'] for item in data.get('items', [])]
     alts = [item.get('title', '') for item in data.get('items', [])]
     photos_sizes = [(item['image']['height'], item['image']['width']) for item in data.get('items', [])]
-    # Print image URLs from the first page
     return links, alts, photos_sizes
 
 
@@ -50,9 +49,7 @@ def fetch_photos_extended(query, amount=10, check_size=False, prefix='', suffix=
     start_index = 1
     photo_urls = []
     photos_alts = []
-    # prev_len = 0
     while current_amount < amount and start_index <= MAX_INDEX:
-        # print(start_index, current_amount)
         links, alts, photos_sizes = fetch_photos(query, prefix, suffix, start_index)
         if len(links) == 0:
             print('No photos found in index', start_index)
@@ -65,10 +62,7 @@ def fetch_photos_extended(query, amount=10, check_size=False, prefix='', suffix=
                 photo_urls.append(links[i])
                 photos_alts.append(alts[i])
                 current_amount += 1
-        # if prev_len == current_amount or current_amount >= amount:
-        #     break
         start_index += 1
-        # prev_len = current_amount
     if current_amount < amount:
         print('Not enough photos found')
     return [{'url': photo_urls[i], 'alt': photos_alts[i]} for i in range(len(photo_urls))]
