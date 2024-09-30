@@ -1,9 +1,6 @@
 """
 This module contains the routes for the FaceMergeQuiz application.
 """
-# TODO the image-classification-api directory
-# TODO GET and POST in all the routes
-
 import os
 import random
 import base64
