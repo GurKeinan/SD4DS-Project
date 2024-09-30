@@ -10,7 +10,6 @@ services:
       - mongodb
     volumes:
       - ./face_merge_quiz/app:/app/app  # Maps the app directory to the container's working directory
-      # TODO: delete the above line before submitting
     env_file:
       - face_merge_quiz/.env
     environment:
