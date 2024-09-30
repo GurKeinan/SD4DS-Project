@@ -1,10 +1,11 @@
 import unittest
 import socket
-
+import time
 
 class BaseAPITest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
+        time.sleep(1)  # because gemini API has a rate limit
         cls.test_image_png = 'tests/assets/britney.png'
         cls.test_image_jpeg = 'tests/assets/test_img.jpeg'
 

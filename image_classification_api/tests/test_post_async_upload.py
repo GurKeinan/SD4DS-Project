@@ -18,6 +18,7 @@ class TestPostAsyncUpload(BaseAPITest):
         self.endpoint = self.BASE_URL + '/async_upload'
 
     def test_content_type_is_json(self):
+        time.sleep(1)
         with open(self.test_image_png, 'rb') as f:
             files = {'image': ('britney.png', f, 'image/png')}
             response = requests.post(self.endpoint, files=files)
@@ -25,12 +26,12 @@ class TestPostAsyncUpload(BaseAPITest):
 
 
     def test_it_returns_202_when_image_is_uploaded(self):
-        time.sleep(1)
         test_files = [(self.test_image_jpeg, 'image/jpeg'), (self.test_image_png, 'image/png')]
         for file, MIME_type in test_files:
             with self.subTest(file=file):
                 with open(file, 'rb') as f:
                     files = {'image': (file, f, MIME_type)}
+                    time.sleep(1)
                     response = requests.post(self.endpoint, files=files)
                 self.assertEqual(response.status_code, 202)
 
@@ -54,6 +55,8 @@ class TestPostAsyncUpload(BaseAPITest):
             response = requests.post(self.endpoint, files=files)
         self.assertEqual(response.status_code, 202)
         request_id1 = response.json()['request_id']
+
+        time.sleep(1)
         with open(self.test_image_jpeg, 'rb') as f:
             files = {'image': ('test_img.jpeg', f, 'image/jpeg')}
             response = requests.post(self.endpoint, files=files)

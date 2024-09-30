@@ -22,6 +22,7 @@ class TestPostUploadImage(BaseAPITest):
             with self.subTest(file=file):
                 with open(file, 'rb') as f:
                     files = {'image': (file, f, MIME_type)}
+                    time.sleep(1)
                     response = requests.post(self.endpoint, files=files)
                 self.assertEqual(response.status_code, 200)
 
@@ -35,6 +36,7 @@ class TestPostUploadImage(BaseAPITest):
             with self.subTest(filename=filename):
                 with open(true_filename, 'rb') as image_file:
                     files = {'image': (filename, image_file, 'image/' + true_file_type)}
+                    time.sleep(1)
                     response = requests.post(self.endpoint, files=files)
 
                 self.assertEqual(response.status_code, 200)
@@ -53,12 +55,12 @@ class TestPostUploadImage(BaseAPITest):
 
     def test_successful_uploads(self):
         for true_file_path in [self.test_image_png, self.test_image_jpeg]:
-            time.sleep(1)
             with self.subTest(true_file_path=true_file_path):
                 self._test_successful_upload(true_file_path)
 
 
     def test_it_returns_400_when_no_file_is_uploaded(self):
+        time.sleep(1)
         response = requests.post(self.endpoint)
         self.assertEqual(response.status_code, 400)
         self.assertEqual(response.json(), {'error': {'code': 400, 'message': 'No file part'}})
