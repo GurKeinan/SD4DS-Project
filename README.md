@@ -109,7 +109,7 @@ To run the project, follow these steps:
 1. Clone the repository.
 2. Ensure that Docker is installed on your machine.
 3. Contact one of the creators for receiving the .env files required for the project. There are 2 .env files - 
-one for the API (in the directory 'image_classification_api') and one for the quiz game (in the directory 'face_merge_quiz').
+one for the image classification API (should be located inside 'image_classification_api/') and one for the quiz game (should be located inside 'face_merge_quiz/').
 4. Run the following command in the terminal from inside the main directory of the project:
 ```bash
 docker-compose up --build
