@@ -17,7 +17,7 @@ import google.generativeai as genai
 from PIL import Image
 
 # Configure Gemini API
-API_KEY = 'AIzaSyBVSBpumtGAT_ycntv5hhLhpsnFZTRLlZc'  # Replace with your actual API key
+API_KEY = os.environ.get('GEMINI_API_TOKEN')
 genai.configure(api_key=API_KEY)
 
 import logging
