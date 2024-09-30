@@ -9,7 +9,6 @@ RUN pip install -r requirements.txt
 
 COPY . .
 
-RUN python download_weights.py
 
 # we set the environment variable GUNICORN_WORKERS in the docker-compose.yml file
 

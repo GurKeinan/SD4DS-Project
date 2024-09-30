@@ -1,20 +1,13 @@
 from flask_pymongo import PyMongo
-
 import random
 import time
 from flask import Flask, request, jsonify
 import os
 from werkzeug.utils import secure_filename
-from torchvision import models, transforms
 import mimetypes
-# Load ResNet model
-from torchvision.models import ResNet50_Weights
 import threading
-
 import google.generativeai as genai
-
 import logging
-
 logging.basicConfig(level=logging.INFO)
 
 # Configure Gemini API
@@ -64,24 +57,6 @@ def generate_unique_id():
         new_id = random.randint(10000, 1000000)
         if db.requests.find_one({'request_id': new_id}) is None:
             return new_id
-
-
-model = models.resnet50(weights=ResNet50_Weights.IMAGENET1K_V1)
-model.eval()
-
-# Load class labels from classes.txt
-imagenet_classes_path = os.path.join(os.path.dirname(__file__), 'imagenet-classes.txt')
-with open(imagenet_classes_path) as f:
-    class_names = [line.strip() for line in f.readlines()]
-
-# Define the image transformation pipeline
-preprocess = transforms.Compose([
-    transforms.Resize(256),
-    transforms.CenterCrop(224),
-    transforms.ToTensor(),
-    transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
-])
-
 
 def classify_image(image_path):
     try:
