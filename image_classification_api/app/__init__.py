@@ -12,26 +12,7 @@ logging.basicConfig(level=logging.INFO)
 API_KEY = os.environ.get('GEMINI_API_TOKEN')
 genai.configure(api_key=API_KEY)
 
-START_TIME_FILE = '/tmp/server_start_time.txt'
-
-def initialize_start_time():
-    """
-    Initializes the start time by writing it to a file if it does not already exist.
-    If the file exists, reads the start time from the file.
-    """
-    global start_time
-    if not os.path.exists(START_TIME_FILE):
-        with open(START_TIME_FILE, 'w') as f:
-            start_time = time.time()
-            f.write(str(start_time))
-        logging.info(f"Start time initialized and written to file: {start_time}")
-    else:
-        with open(START_TIME_FILE, 'r') as f:
-            start_time = float(f.read())
-        logging.info(f"Start time read from file: {start_time}")
-
-# Initialize the start time globally for all workers
-initialize_start_time()
+start_time = time.time()
 
 app = Flask(__name__)
 app.config['MONGO_URI'] = os.environ.get('MONGO_URI')  # MongoDB URI
