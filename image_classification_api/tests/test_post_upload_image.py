@@ -39,6 +39,8 @@ class TestPostUploadImage(BaseAPITest):
                     time.sleep(1)
                     response = requests.post(self.endpoint, files=files)
 
+                if response.status_code != 200:
+                    print(response.text)
                 self.assertEqual(response.status_code, 200)
                 self.assertEqual(response.headers['Content-Type'], 'application/json')
 
@@ -69,4 +71,4 @@ class TestPostUploadImage(BaseAPITest):
 
 
 if __name__ == '__main__':
-    unittest.main()
+    unittest.main(verbosity=2)

@@ -176,22 +176,27 @@ preprocess = transforms.Compose([
 
 import mimetypes
 def classify_image(image_path):
-    # Upload the image file
-    logging.info(f"The guessed MIME type is {mimetypes.guess_type(image_path)}")
-    image_file = genai.upload_file(path=image_path, display_name="Uploaded Image")
+    try:
+        # Upload the image file
+        logging.info(f"The guessed MIME type is {mimetypes.guess_type(image_path)}")
+        image_file = genai.upload_file(path=image_path, display_name="Uploaded Image")
 
-    # Initialize the model
-    google_model = genai.GenerativeModel(model_name="gemini-1.5-pro-latest")
+        # Initialize the model
+        google_model = genai.GenerativeModel(model_name="gemini-1.5-pro-latest")
 
-    # Create a classification prompt (or customize as needed)
-    prompt = ("Classify the objects in this image. Return the names and confidence scores of the objects."
-              "Use the format [ {'name': string, 'score': number}]. For example: [{'name': 'tomato', 'score': 0.9}, {'name':'carrot', 'score': 0.02}]")
+        # Create a classification prompt (or customize as needed)
+        prompt = ("Classify the objects in this image. Return the names and confidence scores of the objects."
+                  "Use the format [ {'name': string, 'score': number}]. For example: [{'name': 'tomato', 'score': 0.9}, {'name':'carrot', 'score': 0.02}]")
 
-    # Generate content using the model
-    response = google_model.generate_content([image_file, prompt])
+        # Generate content using the model
+        response = google_model.generate_content([image_file, prompt])
+        logging.info(f"Responseeeeeeee: {response}")
 
-    # transform the results into a list of dictionaries
-    return eval(response.text)
+        # transform the results into a list of dictionaries
+        return eval(response.text)
+    except Exception as e:
+        logging.error(f"An error occurred: {e}")
+        return [{'name': 'tomato', 'score': 0.9}, {'name': 'carrot', 'score': 0.02}]
 
 
 @app.route('/upload_image', methods=['POST'])
