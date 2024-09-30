@@ -1,13 +1,10 @@
 """
 This module contains the routes for the FaceMergeQuiz application.
 """
-# TODO waiting_users_collection.delete_one({"user_id": user_id}) crash if the user is not in the collection?
-# TODO you can write game_result/win and game_result/lose in the browser and it will work
-
-# TODO I wrote the path cancel_game in the browser and it returned Internal Server Error (and not 400)
+# TODO the 400 screen
+# TODO the image-classification-api directory
 # TODO GET and POST in all the routes
 # TODO: regulate the error messages and the status codes: "Game not found" and "No active game found"
-# TODO remove all -?
 
 import os
 import random
@@ -647,7 +644,7 @@ def show_merged_image():
     elif game['player2_id'] == current_user.id:
         opponent_id = game['player1_id']
     else:
-        return "Error: Player not found in the game.", 400
+        return jsonify({"error": "Player not found in the game"}), 400
 
     # Check if the opponent has submitted their answers
     if 'answers' not in game or str(opponent_id) not in game['answers']:
