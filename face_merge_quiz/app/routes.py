@@ -1,10 +1,8 @@
 """
 This module contains the routes for the FaceMergeQuiz application.
 """
-# TODO the 400 screen
 # TODO the image-classification-api directory
 # TODO GET and POST in all the routes
-# TODO: regulate the error messages and the status codes: "Game not found" and "No active game found"
 
 import os
 import random
@@ -251,7 +249,7 @@ def leave_created_game_waiting_room():
             session.pop('game_id', None)
             return jsonify({"message": "Game deleted successfully"}), 200
 
-    return jsonify({"message": "Game not found or already joined by another player"}), 400
+    return jsonify({"message": "No active game found, or it has already been joined by another player."}), 400
 
 
 @app.route('/join-random-game', methods=['GET', 'POST'])
