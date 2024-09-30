@@ -1,4 +1,3 @@
-
 from flask_pymongo import PyMongo
 
 import random
@@ -7,19 +6,20 @@ from flask import Flask, request, jsonify
 import os
 from werkzeug.utils import secure_filename
 from torchvision import models, transforms
+import mimetypes
 # Load ResNet model
 from torchvision.models import ResNet50_Weights
 import threading
 
 import google.generativeai as genai
 
+import logging
+
+logging.basicConfig(level=logging.INFO)
 
 # Configure Gemini API
 API_KEY = os.environ.get('GEMINI_API_TOKEN')
 genai.configure(api_key=API_KEY)
-
-import logging
-logging.basicConfig(level=logging.INFO)
 
 start_time = time.time()
 
@@ -65,6 +65,7 @@ def generate_unique_id():
         if db.requests.find_one({'request_id': new_id}) is None:
             return new_id
 
+
 model = models.resnet50(weights=ResNet50_Weights.IMAGENET1K_V1)
 model.eval()
 
@@ -82,8 +83,6 @@ preprocess = transforms.Compose([
 ])
 
 
-
-import mimetypes
 def classify_image(image_path):
     try:
         # Upload the image file
@@ -95,11 +94,12 @@ def classify_image(image_path):
 
         # Create a classification prompt (or customize as needed)
         prompt = ("Classify the objects in this image. Return the names and confidence scores of the objects."
-                  "Use the format [ {'name': string, 'score': number}]. For example: [{'name': 'tomato', 'score': 0.9}, {'name':'carrot', 'score': 0.02}]")
+                  "Use the format [ {'name': string, 'score': number}]. For example: "
+                  "[{'name': 'tomato', 'score': 0.9}, {'name':'carrot', 'score': 0.02}]")
 
         # Generate content using the model
         response = google_model.generate_content([image_file, prompt])
-        logging.info(f"Responseeeeeeee: {response}")
+        logging.info(f"Response: {response}")
 
         # transform the results into a list of dictionaries
         return eval(response.text)
@@ -237,12 +237,12 @@ def get_result(request_id):
 def get_status():
     processed = {
         # async + sync
-        'success': db.requests.count_documents({'status': 'completed'}) +
-                   db.counters.find_one({'_id': 'counters'})['success_count'],
-        'fail': db.requests.count_documents({'status': 'error'}) +
-                db.counters.find_one({'_id': 'counters'})['error_count'],
-        'running': db.requests.count_documents({'status': 'running'}) +
-                   db.counters.find_one({'_id': 'counters'})['running_count'],
+        'success': db.requests.count_documents({'status': 'completed'}) + db.counters.find_one(
+            {'_id': 'counters'})['success_count'],
+        'fail': db.requests.count_documents({'status': 'error'}) + db.counters.find_one(
+            {'_id': 'counters'})['error_count'],
+        'running': db.requests.count_documents({'status': 'running'}) + db.counters.find_one(
+            {'_id': 'counters'})['running_count'],
         'queued': 0  # we did not implement a queue
     }
 
